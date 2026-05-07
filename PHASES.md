@@ -46,14 +46,14 @@
 ## Phase 0 — Project Setup & Architecture
 *Goal: Clean foundation before any code.*
 
-- [ ] Initialize git repo and project structure
-- [ ] Set up Python virtual environment + `pyproject.toml`
-- [ ] Create config system (`config.yaml` + `.env` for API keys)
-- [ ] Set up logging infrastructure (structured logs, log levels)
-- [ ] Define tool interface: every action Bobby can take is a typed Python function returning `ToolResult(success, message, data)`
-- [ ] Write a `README.md` with setup instructions
+- [x] Initialize git repo and project structure
+- [x] Set up Python virtual environment + `pyproject.toml`
+- [x] Create config system (`config.yaml` + `.env` for API keys)
+- [x] Set up logging infrastructure (structured logs, log levels)
+- [x] Define tool interface: every action Bobby can take is a typed Python function returning `ToolResult(success, message, data)`
+- [x] Write a `README.md` with setup instructions
 - [ ] Set up basic CI (lint, type check with mypy)
-- [ ] Add prompt injection defense to system prompt: all external content wrapped in `<data>` XML tags
+- [x] Add prompt injection defense to system prompt: all external content wrapped in `<data>` XML tags
 - [ ] **[WoL prerequisite]** Validate Wake-on-LAN support NOW: enable in BIOS (look for "Wake on LAN" or "Power on by PCI-E"), check NIC settings in Device Manager, confirm router passes broadcast packets — before designing Phase 4
 
 **Project structure:**
@@ -378,7 +378,7 @@ bobby/
 
 ## Current Status
 
-- [ ] Phase 0 — Project Setup
+- [~] Phase 0 — Project Setup (scaffold done, CI + WoL prereq remaining)
 - [ ] Phase 1 — Core Voice Pipeline
 - [ ] Phase 2 — OS Control
 - [ ] Phase 3 — Memory Layer
