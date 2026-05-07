@@ -13,6 +13,7 @@ from typing import Callable
 
 import numpy as np
 import sounddevice as sd
+import openwakeword.utils
 from openwakeword.model import Model
 
 from core import config
@@ -33,6 +34,10 @@ class WakeWordDetector:
 
         custom_path = config.get("wake_word_path")
         wake_model = config.get("wake_word_model", "hey_jarvis")
+
+        # Download pre-trained models on first run (~10MB total, cached after)
+        log.info("Checking wake word models...")
+        openwakeword.utils.download_models()
 
         if custom_path:
             self._model = Model(wakeword_models=[custom_path], inference_framework="onnx")

@@ -40,8 +40,8 @@ def speak(text: str) -> None:
 
 def _try_elevenlabs(text: str) -> bool:
     try:
-        from elevenlabs.client import ElevenLabs
-        from elevenlabs import play, stream
+        # Import from top-level elevenlabs — elevenlabs.client changed in v2.x
+        from elevenlabs import ElevenLabs, play, stream
 
         api_key = config.get("elevenlabs_api_key")
         voice_id = config.get("elevenlabs_voice_id")
@@ -50,13 +50,26 @@ def _try_elevenlabs(text: str) -> bool:
             return False
 
         client = ElevenLabs(api_key=api_key)
-        audio_stream = client.text_to_speech.convert_as_stream(
-            text=text,
-            voice_id=voice_id,
-            model_id="eleven_turbo_v2_5",
-            output_format="mp3_44100_128",
-        )
-        stream(audio_stream)
+
+        try:
+            # Streaming: starts playing before full audio is ready (lower latency)
+            audio_stream = client.text_to_speech.convert_as_stream(
+                voice_id=voice_id,
+                text=text,
+                model_id="eleven_turbo_v2_5",
+                output_format="mp3_44100_128",
+            )
+            stream(audio_stream)
+        except AttributeError:
+            # Fallback for SDK versions where streaming API differs
+            audio = client.text_to_speech.convert(
+                voice_id=voice_id,
+                text=text,
+                model_id="eleven_turbo_v2_5",
+                output_format="mp3_44100_128",
+            )
+            play(audio)
+
         return True
 
     except Exception as e:

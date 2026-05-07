@@ -22,12 +22,18 @@ def register_tool(
 ):
     """Decorator that registers a function as a Bobby tool."""
     def decorator(fn: Callable) -> Callable:
+        # Strip "required" from individual property dicts — it belongs only at the
+        # top-level schema array, not inside each property definition (JSON Schema draft 2020-12).
+        clean_properties = {
+            k: {key: val for key, val in v.items() if key != "required"}
+            for k, v in parameters.items()
+        }
         _tools[name] = {
             "name": name,
             "description": description,
             "input_schema": {
                 "type": "object",
-                "properties": parameters,
+                "properties": clean_properties,
                 "required": [k for k, v in parameters.items() if v.get("required", False)],
             },
         }
