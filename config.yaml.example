@@ -15,9 +15,9 @@ claude_complex_model: "claude-sonnet-4-6"           # smarter — used for memor
 elevenlabs_api_key: "..."
 elevenlabs_voice_id: "..."         # find yours at elevenlabs.io/voice-lab
 
-# Wake word (Picovoice Porcupine)
-porcupine_access_key: "..."        # free tier at picovoice.io/console
-# wake_word: "hey bobby"           # or use a .ppn custom wake word file
+# Wake word (OpenWakeWord — no API key required, models download automatically)
+wake_word_model: "hey_jarvis"      # placeholder: say "hey jarvis" to trigger Bobby
+# wake_word_path: ""               # path to custom .onnx model once you train "hey bobby"
 
 # Local LLM fallback (Ollama)
 # ollama_model: "qwen2.5:14b"

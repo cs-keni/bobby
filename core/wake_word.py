@@ -1,25 +1,28 @@
 """
-Always-on wake word detection via Porcupine.
-Fires a callback when "hey bobby" or "yo bobby" is detected.
+Always-on wake word detection via OpenWakeWord (open source, no API key required).
+Fires a callback when the configured wake phrase is detected.
+
+Default placeholder: "hey jarvis" — same rhythm as "hey bobby".
+To train a custom "hey bobby" model:
+  https://github.com/dscripka/openWakeWord#custom-models
+Then set wake_word_path in config.yaml to point to your .onnx file.
 """
 
-import struct
 import threading
 from typing import Callable
 
-import pvporcupine
+import numpy as np
 import sounddevice as sd
+from openwakeword.model import Model
 
 from core import config
 from core.logging import get_logger
 
 log = get_logger(__name__)
 
-# Built-in Porcupine keywords closest to our wake words.
-# For a custom "hey bobby" keyword, generate a .ppn at picovoice.io/console
-# and set wake_word_path in config.yaml.
-DEFAULT_KEYWORDS = ["hey siri", "ok google"]  # placeholder until custom ppn is generated
-FRAME_LENGTH = 512
+SAMPLE_RATE = 16_000
+CHUNK_SIZE = 1280       # 80ms at 16kHz — OpenWakeWord's native frame size
+DETECTION_THRESHOLD = 0.5
 
 
 class WakeWordDetector:
@@ -28,24 +31,18 @@ class WakeWordDetector:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
-        access_key = config.require("porcupine_access_key")
-        ppn_path = config.get("wake_word_path")
+        custom_path = config.get("wake_word_path")
+        wake_model = config.get("wake_word_model", "hey_jarvis")
 
-        if ppn_path:
-            self._porcupine = pvporcupine.create(
-                access_key=access_key,
-                keyword_paths=[ppn_path],
-            )
-            log.info(f"Wake word loaded from: {ppn_path}")
+        if custom_path:
+            self._model = Model(wakeword_models=[custom_path], inference_framework="onnx")
+            log.info(f"Custom wake word model loaded: {custom_path}")
         else:
-            # Fall back to built-in "porcupine" keyword until custom ppn is ready
-            self._porcupine = pvporcupine.create(
-                access_key=access_key,
-                keywords=["porcupine"],
-            )
+            # Downloads ~2MB model file on first run (cached at ~/.cache/openwakeword/)
+            self._model = Model(wakeword_models=[wake_model], inference_framework="onnx")
             log.warning(
-                "No custom wake word configured — using 'porcupine' as placeholder. "
-                "Generate your 'hey bobby' .ppn at picovoice.io/console"
+                f"Using '{wake_model}' as wake phrase placeholder — say '{wake_model.replace('_', ' ')}' to trigger Bobby. "
+                "Train a custom 'hey bobby' model and set wake_word_path in config.yaml when ready."
             )
 
     def start(self) -> None:
@@ -58,23 +55,23 @@ class WakeWordDetector:
         self._stop.set()
         if self._thread:
             self._thread.join(timeout=2)
-        self._porcupine.delete()
         log.info("Wake word detection stopped")
 
     def _listen_loop(self) -> None:
-        frame_length = self._porcupine.frame_length
-        sample_rate = self._porcupine.sample_rate
-
         with sd.InputStream(
-            samplerate=sample_rate,
+            samplerate=SAMPLE_RATE,
             channels=1,
             dtype="int16",
-            blocksize=frame_length,
+            blocksize=CHUNK_SIZE,
         ) as stream:
             while not self._stop.is_set():
-                data, _ = stream.read(frame_length)
-                pcm = struct.unpack_from(f"{frame_length}h", bytes(data))
-                result = self._porcupine.process(pcm)
-                if result >= 0:
-                    log.info("Wake word detected!")
-                    self.on_wake()
+                data, _ = stream.read(CHUNK_SIZE)
+                audio = data[:, 0]
+                predictions = self._model.predict(audio)
+
+                for _, score in predictions.items():
+                    if score >= DETECTION_THRESHOLD:
+                        log.info(f"Wake word detected! (confidence: {score:.2f})")
+                        self._model.reset()  # reset buffer so it doesn't re-trigger immediately
+                        self.on_wake()
+                        break
