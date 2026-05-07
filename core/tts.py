@@ -39,37 +39,30 @@ def speak(text: str) -> None:
 
 
 def _try_elevenlabs(text: str) -> bool:
+    api_key = config.get("elevenlabs_api_key")
+    voice_id = config.get("elevenlabs_voice_id")
+
+    if not api_key or not voice_id:
+        return False
+
     try:
-        # Import from top-level elevenlabs — elevenlabs.client changed in v2.x
-        from elevenlabs import ElevenLabs, play, stream
+        import httpx
+        import numpy as np
+        import sounddevice as sd
 
-        api_key = config.get("elevenlabs_api_key")
-        voice_id = config.get("elevenlabs_voice_id")
+        # Call ElevenLabs REST API directly — avoids SDK version churn
+        # pcm_22050: raw 16-bit signed PCM at 22050Hz, playable directly with sounddevice
+        response = httpx.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+            headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+            json={"text": text, "model_id": "eleven_turbo_v2_5", "output_format": "pcm_22050"},
+            timeout=30,
+        )
+        response.raise_for_status()
 
-        if not api_key or not voice_id:
-            return False
-
-        client = ElevenLabs(api_key=api_key)
-
-        try:
-            # Streaming: starts playing before full audio is ready (lower latency)
-            audio_stream = client.text_to_speech.convert_as_stream(
-                voice_id=voice_id,
-                text=text,
-                model_id="eleven_turbo_v2_5",
-                output_format="mp3_44100_128",
-            )
-            stream(audio_stream)
-        except AttributeError:
-            # Fallback for SDK versions where streaming API differs
-            audio = client.text_to_speech.convert(
-                voice_id=voice_id,
-                text=text,
-                model_id="eleven_turbo_v2_5",
-                output_format="mp3_44100_128",
-            )
-            play(audio)
-
+        audio = np.frombuffer(response.content, dtype=np.int16).astype(np.float32) / 32768.0
+        sd.play(audio, samplerate=22050)
+        sd.wait()
         return True
 
     except Exception as e:
