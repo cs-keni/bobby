@@ -1,0 +1,75 @@
+[project]
+name = "bobby"
+version = "0.1.0"
+description = "Personal AI assistant — voice control, memory, phone bridge"
+requires-python = ">=3.11"
+
+dependencies = [
+    # LLM
+    "anthropic>=0.40.0",
+
+    # Wake word
+    "pvporcupine>=3.0.0",
+
+    # Speech-to-text
+    "openai-whisper>=20240930",
+    "sounddevice>=0.4.6",
+    "numpy>=1.26.0",
+
+    # Text-to-speech
+    "elevenlabs>=1.9.0",
+    "pyttsx3>=2.90",          # fallback TTS
+
+    # OS control
+    "pywinauto>=0.6.8",
+    "pywin32>=306",
+    "keyboard>=0.13.5",
+    "psutil>=5.9.0",
+
+    # Memory
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+
+    # Server
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "websockets>=13.0",
+    "python-multipart>=0.0.9",
+
+    # Browser automation
+    "playwright>=1.48.0",
+
+    # Screen capture
+    "mss>=9.0.1",             # fast cross-platform screenshots (MJPEG stream)
+    "Pillow>=10.0.0",
+
+    # Utilities
+    "pydantic>=2.9.0",
+    "pyyaml>=6.0.2",
+    "python-dotenv>=1.0.0",
+    "rich>=13.9.0",           # pretty console output
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "mypy>=1.13.0",
+    "ruff>=0.7.0",
+]
+
+[project.scripts]
+bobby = "core.pipeline:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+# Porcupine
+*.ppn
+
+# Models
+models/
+*.bin
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Node (phone app)
+phone/node_modules/
+phone/dist/
+phone/.next/
+
+# Config with secrets (keep config.yaml.example, not config.yaml)
+config.yaml

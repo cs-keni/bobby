@@ -1,0 +1,44 @@
+# Bobby Configuration
+# Copy this to config.yaml and fill in your API keys.
+# config.yaml is gitignored — never commit it.
+
+# LLM
+anthropic_api_key: "sk-ant-..."
+claude_simple_model: "claude-haiku-4-5-20251001"   # fast, cheap — used for simple commands
+claude_complex_model: "claude-sonnet-4-6"           # smarter — used for memory/reasoning
+
+# Speech-to-text
+# whisper_model: "whisper-small"   # local (default)
+# deepgram_api_key: ""             # cloud fallback if Whisper is too slow
+
+# Text-to-speech
+elevenlabs_api_key: "..."
+elevenlabs_voice_id: "..."         # find yours at elevenlabs.io/voice-lab
+
+# Wake word (Picovoice Porcupine)
+porcupine_access_key: "..."        # free tier at picovoice.io/console
+# wake_word: "hey bobby"           # or use a .ppn custom wake word file
+
+# Local LLM fallback (Ollama)
+# ollama_model: "qwen2.5:14b"
+# ollama_base_url: "http://localhost:11434"
+
+# Server (phone bridge)
+server_host: "0.0.0.0"
+server_port: 8765
+server_token: "change-me-to-a-random-string"
+
+# Memory
+memory_db_path: "~/.bobby/memory.db"
+vector_db_path: "~/.bobby/chroma"
+max_memory_tokens: 4000            # hard cap on memory injected per prompt
+
+# Behavior
+tts_fallback: true                 # fall back to pyttsx3 if ElevenLabs is down
+confirmation_required_commands:    # terminal commands that always require confirmation
+  - "rm"
+  - "del"
+  - "format"
+  - "reg delete"
+  - "shutdown"
+  - "rmdir"
