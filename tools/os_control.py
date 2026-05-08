@@ -10,6 +10,8 @@ import os
 import shlex
 import subprocess
 import sys
+import time
+from difflib import get_close_matches
 
 from core import config
 from core.logging import get_logger
@@ -63,6 +65,25 @@ def _get_app_map() -> dict[str, str]:
     return merged
 
 
+def _resolve_app(name: str, app_map: dict[str, str]) -> str:
+    """
+    Resolve a natural-language app name to an executable.
+    Priority: exact → substring → fuzzy (0.6 cutoff) → passthrough.
+    """
+    name_lower = name.lower().strip()
+    if name_lower in app_map:
+        return app_map[name_lower]
+    # Substring: "vs" → "vs code", "google" → "google chrome"
+    for key, exe in app_map.items():
+        if name_lower in key or key.startswith(name_lower):
+            return exe
+    # Fuzzy: "chorme" → "chrome", "discrod" → "discord"
+    matches = get_close_matches(name_lower, app_map.keys(), n=1, cutoff=0.6)
+    if matches:
+        return app_map[matches[0]]
+    return name  # unknown app — try the name directly
+
+
 # Commands that require explicit user confirmation before executing.
 # This list is also the source of truth for the safety test.
 DANGEROUS_PATTERNS = [
@@ -74,11 +95,15 @@ DANGEROUS_PATTERNS = [
     "reg delete",
     "reg del",
     "shutdown /f",
+    "shutdown /r",  # restart
+    "shutdown /s",  # shutdown
+    "shutdown /l",  # logoff
     "shutdown -f",
     "rmdir /s",
     "rd /s",
     "mkfs",
     "dd if=",
+    "taskkill /f",
     ":(){:|:&};:",  # fork bomb
 ]
 
@@ -115,7 +140,7 @@ def _is_dangerous(command: str) -> bool:
 )
 def open_app(name: str, admin: bool = False) -> ToolResult:
     app_map = _get_app_map()
-    executable = app_map.get(name.lower(), name)
+    executable = _resolve_app(name, app_map)
 
     try:
         on_windows = sys.platform == "win32"
@@ -262,3 +287,251 @@ def set_volume(level: int) -> ToolResult:
     except Exception as e:
         log.error(f"Volume control failed: {e}")
         return ToolResult(success=False, message=f"Couldn't change volume: {e}")
+
+
+# Window action → keyboard shortcut mapping (Windows built-ins, no extra deps)
+_WINDOW_KEYS: dict[str, str] = {
+    "snap_left":    "windows+left",
+    "snap_right":   "windows+right",
+    "maximize":     "windows+up",
+    "minimize":     "windows+down",
+    "close":        "alt+f4",
+    "show_desktop": "windows+d",
+    "fullscreen":   "f11",
+}
+
+
+@register_tool(
+    name="manage_window",
+    description=(
+        "Snap, resize, focus, minimize, or close windows. "
+        "Actions: snap_left, snap_right, maximize, minimize, close, fullscreen, show_desktop, focus."
+    ),
+    parameters={
+        "action": {
+            "type": "string",
+            "description": "snap_left | snap_right | maximize | minimize | close | fullscreen | show_desktop | focus",
+            "required": True,
+        },
+        "app_name": {
+            "type": "string",
+            "description": "App name to bring to focus (only used with the 'focus' action)",
+        },
+    },
+)
+def manage_window(action: str, app_name: str = "") -> ToolResult:
+    if action in _WINDOW_KEYS:
+        try:
+            import keyboard
+            keyboard.send(_WINDOW_KEYS[action])
+            label = action.replace("_", " ")
+            return ToolResult(success=True, message=f"Window {label}.")
+        except Exception as e:
+            return ToolResult(success=False, message=f"Couldn't {action}: {e}")
+
+    if action == "focus":
+        if not app_name:
+            return ToolResult(success=False, message="Provide an app_name to focus.")
+        try:
+            if sys.platform == "win32":
+                import win32gui
+
+                def _enum_cb(hwnd: int, found: list) -> None:
+                    if win32gui.IsWindowVisible(hwnd) and app_name.lower() in win32gui.GetWindowText(hwnd).lower():
+                        found.append(hwnd)
+
+                found: list[int] = []
+                win32gui.EnumWindows(_enum_cb, found)
+                if not found:
+                    return ToolResult(success=False, message=f"No visible window matching '{app_name}'.")
+                win32gui.SetForegroundWindow(found[0])
+                return ToolResult(success=True, message=f"Focused {app_name}.")
+            else:
+                # WSL / Linux: route through PowerShell wscript.shell
+                ps = (
+                    f"$p = Get-Process | Where-Object {{$_.MainWindowTitle -like '*{app_name}*'}} "
+                    f"| Select-Object -First 1; "
+                    f"if ($p) {{ $ws = New-Object -ComObject wscript.shell; $ws.AppActivate($p.Id) }}"
+                )
+                subprocess.Popen(f'powershell.exe -Command "{ps}"', shell=True)
+                return ToolResult(success=True, message=f"Switched to {app_name}.")
+        except Exception as e:
+            return ToolResult(success=False, message=f"Couldn't focus {app_name}: {e}")
+
+    return ToolResult(success=False, message=f"Unknown window action: '{action}'.")
+
+
+@register_tool(
+    name="get_active_window",
+    description="Get the title of the currently focused window.",
+    parameters={},
+)
+def get_active_window() -> ToolResult:
+    try:
+        if sys.platform == "win32":
+            import win32gui
+            hwnd = win32gui.GetForegroundWindow()
+            title = win32gui.GetWindowText(hwnd)
+            return ToolResult(success=True, message=title or "(no title)", data={"title": title})
+        else:
+            result = subprocess.run(
+                ['powershell.exe', '-Command',
+                 'Add-Type -AssemblyName System.Windows.Forms; '
+                 '[System.Windows.Forms.Form]::ActiveForm.Text'],
+                capture_output=True, text=True, timeout=5,
+            )
+            title = result.stdout.strip()
+            return ToolResult(success=True, message=title or "(unknown)", data={"title": title})
+    except Exception as e:
+        return ToolResult(success=False, message=f"Couldn't get active window: {e}")
+
+
+@register_tool(
+    name="system_power",
+    description="Lock, sleep, restart, or shut down the PC. Restart and shutdown require voice confirmation.",
+    parameters={
+        "action": {
+            "type": "string",
+            "description": "lock | sleep | restart | shutdown",
+            "required": True,
+        },
+    },
+)
+def system_power(action: str, confirmed: bool = False) -> ToolResult:
+    # confirmed is NOT in the schema — only the pipeline sets it after voice confirmation.
+    if action in ("restart", "shutdown") and not confirmed:
+        return ToolResult(
+            success=False,
+            message=f"I need confirmation before I {action} your PC.",
+            data={
+                "requires_confirmation": True,
+                "command": f"{action} your PC",
+                "confirm_and_retry_tool": "system_power",
+                "confirm_and_retry_input": {"action": action, "confirmed": True},
+            },
+        )
+
+    on_windows = sys.platform == "win32"
+    on_wsl = _is_wsl()
+
+    try:
+        if action == "lock":
+            if on_windows:
+                import ctypes
+                ctypes.windll.user32.LockWorkStation()
+            elif on_wsl:
+                subprocess.Popen("rundll32.exe user32.dll,LockWorkStation", shell=True)
+            else:
+                return ToolResult(success=False, message="Lock is only supported on Windows.")
+
+        elif action == "sleep":
+            if on_windows:
+                subprocess.run(
+                    "rundll32.exe powrprof.dll,SetSuspendState 0,1,0",
+                    shell=True, check=True,
+                )
+            elif on_wsl:
+                subprocess.Popen(
+                    "powershell.exe -Command \"Add-Type -Assembly System.Windows.Forms; "
+                    "[System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false)\"",
+                    shell=True,
+                )
+            else:
+                return ToolResult(success=False, message="Sleep is only supported on Windows.")
+
+        elif action == "restart":
+            cmd = "shutdown /r /t 0" if (on_windows or on_wsl) else "sudo reboot"
+            subprocess.run(cmd, shell=True, check=True)
+
+        elif action == "shutdown":
+            cmd = "shutdown /s /t 0" if (on_windows or on_wsl) else "sudo poweroff"
+            subprocess.run(cmd, shell=True, check=True)
+
+        else:
+            return ToolResult(success=False, message=f"Unknown action: '{action}'.")
+
+        return ToolResult(success=True, message=f"PC {action} initiated.")
+    except Exception as e:
+        log.error(f"system_power {action} failed: {e}")
+        return ToolResult(success=False, message=f"Couldn't {action}: {e}")
+
+
+@register_tool(
+    name="set_brightness",
+    description="Set screen brightness (0-100). Works on laptops and monitors with WMI support.",
+    parameters={
+        "level": {
+            "type": "integer",
+            "description": "Brightness level 0-100",
+            "required": True,
+        },
+    },
+)
+def set_brightness(level: int) -> ToolResult:
+    level = max(0, min(100, level))
+    try:
+        ps = (
+            f"$mon = Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods; "
+            f"if ($mon) {{ $mon.WmiSetBrightness(1, {level}) }} "
+            f"else {{ Write-Error 'No WMI brightness support' }}"
+        )
+        result = subprocess.run(
+            ["powershell.exe" if (sys.platform != "win32") else "powershell", "-Command", ps],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0:
+            return ToolResult(success=True, message=f"Brightness set to {level}%.")
+        return ToolResult(
+            success=False,
+            message="Brightness control not supported on this monitor (external monitors usually don't support WMI).",
+        )
+    except Exception as e:
+        return ToolResult(success=False, message=f"Couldn't set brightness: {e}")
+
+
+@register_tool(
+    name="type_text",
+    description="Type text at the current cursor position, exactly as if you typed it on a keyboard.",
+    parameters={
+        "text": {
+            "type": "string",
+            "description": "Text to type",
+            "required": True,
+        },
+        "delay_ms": {
+            "type": "integer",
+            "description": "Milliseconds between keystrokes (default 0, increase if the target app is slow)",
+        },
+    },
+)
+def type_text(text: str, delay_ms: int = 0) -> ToolResult:
+    try:
+        import keyboard
+        keyboard.write(text, delay=delay_ms / 1000.0)
+        preview = text[:40] + ("..." if len(text) > 40 else "")
+        return ToolResult(success=True, message=f"Typed: {preview!r}")
+    except Exception as e:
+        return ToolResult(success=False, message=f"Couldn't type text: {e}")
+
+
+@register_tool(
+    name="press_keys",
+    description="Press a keyboard shortcut or key combination.",
+    parameters={
+        "keys": {
+            "type": "string",
+            "description": (
+                "Key combo to press. Examples: 'ctrl+c', 'alt+tab', 'windows+d', "
+                "'ctrl+shift+esc', 'f5', 'enter', 'escape'"
+            ),
+            "required": True,
+        },
+    },
+)
+def press_keys(keys: str) -> ToolResult:
+    try:
+        import keyboard
+        keyboard.send(keys)
+        return ToolResult(success=True, message=f"Pressed {keys}.")
+    except Exception as e:
+        return ToolResult(success=False, message=f"Couldn't press {keys!r}: {e}")

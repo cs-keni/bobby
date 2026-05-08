@@ -122,34 +122,37 @@ bobby/
 ## Phase 2 — OS Control & App Automation
 *Goal: Bobby can actually do things on your PC.*
 
-- [ ] **App launcher**: open any installed app by name
-  - [ ] Fuzzy match: "open vs" → VSCode
+- [x] **App launcher**: open any installed app by name
+  - [x] Fuzzy match: "open vs" → VSCode (`_resolve_app`: exact → substring → difflib → passthrough)
   - [ ] Admin mode support: `open riot in admin mode`
-  - [ ] Note: pywinauto/Win32 accessibility APIs work well for native Windows apps but are unreliable for Electron apps (VS Code, Discord, Slack). For those, use `subprocess` to launch and rely on voice/keyboard control rather than UI automation.
-- [ ] **Named shortcuts system**
-  - [ ] "The usual" → Discord + Chrome + YouTube tab + Riot (admin)
-  - [ ] User can teach Bobby new shortcuts: "bobby, save this combo as 'work mode'"
-  - [ ] Shortcuts stored in SQLite memory
-- [ ] **Window management**
-  - [ ] Snap windows left/right/fullscreen
-  - [ ] Switch focus to a specific app
-  - [ ] Close app or all windows
-- [ ] **System controls**
-  - [ ] Volume up/down/mute/set to X%
-  - [ ] Screen brightness
-  - [ ] Lock/sleep/restart/shutdown PC
-- [ ] **Terminal execution**
-  - [ ] Run commands in a new terminal window
-  - [ ] Run commands silently and report output
-  - [ ] **[CRITICAL TEST]** Dangerous command blocklist: `rm -rf`, `format`, `del /f /s /q`, `reg delete`, `shutdown /f` → Bobby asks confirmation BEFORE executing, never auto-runs
-  - [ ] Safety confirmation for destructive commands
-- [ ] **Keyboard/mouse automation**
-  - [ ] Type text for you
-  - [ ] Press hotkeys
-  - [ ] Click coordinates or UI elements (pywinauto)
-- [ ] **Active window awareness**
-  - [ ] Bobby knows what app is currently in focus
-  - [ ] Commands can be context-aware: "make this fullscreen" → acts on active window
+  - [x] Note: pywinauto/Win32 accessibility APIs work well for native Windows apps but are unreliable for Electron apps (VS Code, Discord, Slack). For those, use `subprocess` to launch and rely on voice/keyboard control rather than UI automation.
+- [x] **Named shortcuts system** (`tools/shortcuts.py`)
+  - [x] "The usual" → Chrome + Discord + Spotify (seeded default; user can edit)
+  - [x] User can teach Bobby new shortcuts: "bobby, save this combo as 'work mode'"
+  - [x] Shortcuts stored in SQLite (`~/.bobby/shortcuts.db`)
+  - [x] Tools: `open_shortcut`, `save_shortcut`, `list_shortcuts`, `delete_shortcut`
+- [x] **Window management** (`manage_window`, `get_active_window`)
+  - [x] Snap windows left/right/fullscreen/minimize (`_WINDOW_KEYS` + keyboard shortcuts)
+  - [x] Switch focus to a specific app (win32gui on Windows, PowerShell fallback from WSL)
+  - [x] Close app (alt+f4 via `press_keys`)
+- [x] **System controls**
+  - [ ] Volume up/down/mute/set to X% (deferred — pycaw integration)
+  - [x] Screen brightness (`set_brightness` via WMI PowerShell)
+  - [x] Lock/sleep/restart/shutdown PC (`system_power` — hard voice confirmation gate)
+- [x] **Terminal execution**
+  - [x] Run commands in a new terminal window
+  - [x] Run commands silently and report output
+  - [x] **[CRITICAL TEST]** Dangerous command blocklist: `rm -rf`, `format`, `del /f /s /q`, `reg delete`, `shutdown /f`, `taskkill /f` → hard confirmation gate in pipeline, never auto-runs
+  - [x] Safety confirmation for destructive commands (`_confirm_via_voice` + `confirm_and_retry_tool` pattern)
+- [x] **Keyboard/mouse automation**
+  - [x] Type text for you (`type_text` via `keyboard.write`)
+  - [x] Press hotkeys (`press_keys` via `keyboard.send`)
+  - [ ] Click coordinates or UI elements (pywinauto — deferred to Phase 9 screen awareness)
+- [x] **Active window awareness**
+  - [x] Bobby knows what app is currently in focus (`get_active_window`)
+  - [ ] Commands can be context-aware: "make this fullscreen" → acts on active window (Phase 9)
+
+**Phase 2 tests:** `tests/test_phase2.py` — 14 passed, 1 skipped (Windows-only) ✓
 
 ---
 
@@ -381,7 +384,7 @@ bobby/
 
 - [x] Phase 0 — Project Setup (CI done, WoL prereq deferred — waiting on Pi Zero 2)
 - [~] Phase 1 — Core Voice Pipeline (core loop working; streaming TTS, mid-response interrupt, chimes, timeout tests remaining)
-- [ ] Phase 2 — OS Control
+- [~] Phase 2 — OS Control (core done; volume control + context-aware window targeting deferred)
 - [ ] Phase 3 — Memory Layer
 - [ ] Phase 4 — Phone Bridge
 - [ ] Phase 5 — Remote Screen & Files

@@ -97,11 +97,18 @@ def _process_command(text: str) -> None:
         # When a tool signals requires_confirmation, we get explicit voice input
         # before allowing execution. The pipeline then re-dispatches with confirmed=True.
         if result.data.get("requires_confirmation"):
-            command = result.data.get("command", "that command")
+            command = result.data.get("command", "that action")
             if _confirm_via_voice(command):
-                result = dispatch_tool("execute_terminal", {"command": command, "confirmed": True})
+                # Support tools that specify their own retry (e.g. system_power).
+                # Falls back to execute_terminal for plain shell commands.
+                retry_tool = result.data.get("confirm_and_retry_tool", "execute_terminal")
+                retry_input = result.data.get(
+                    "confirm_and_retry_input",
+                    {"command": command, "confirmed": True},
+                )
+                result = dispatch_tool(retry_tool, retry_input)
             else:
-                result = ToolResult(success=False, message="Command cancelled by user.")
+                result = ToolResult(success=False, message="Action cancelled by user.")
 
         tool_results.append({
             "type": "tool_result",
