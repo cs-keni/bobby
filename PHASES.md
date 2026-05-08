@@ -52,9 +52,9 @@
 - [x] Set up logging infrastructure (structured logs, log levels)
 - [x] Define tool interface: every action Bobby can take is a typed Python function returning `ToolResult(success, message, data)`
 - [x] Write a `README.md` with setup instructions
-- [ ] Set up basic CI (lint, type check with mypy)
+- [x] Set up basic CI (lint, type check with mypy) — GitHub Actions, added in commit `b8f4ab6`
 - [x] Add prompt injection defense to system prompt: all external content wrapped in `<data>` XML tags
-- [ ] **[WoL prerequisite]** Validate Wake-on-LAN support NOW: enable in BIOS (look for "Wake on LAN" or "Power on by PCI-E"), check NIC settings in Device Manager, confirm router passes broadcast packets — before designing Phase 4
+- [ ] **[WoL prerequisite — DEFERRED]** Validate Wake-on-LAN support: enable in BIOS, check NIC settings in Device Manager, confirm router passes broadcast packets — waiting on Raspberry Pi Zero 2 stock before designing Phase 4
 
 **Project structure:**
 ```
@@ -90,28 +90,29 @@ bobby/
 ## Phase 1 — Core Voice Pipeline (PC)
 *Goal: Bobby hears you, thinks, and talks back.*
 
-- [ ] Wake word detection with Porcupine ("hey bobby", "yo bobby")
-  - [ ] Always-on background thread, minimal CPU usage
+- [x] Wake word detection via OpenWakeWord ("hey jarvis" placeholder — same rhythm as "hey bobby")
+  - [x] Always-on background thread, minimal CPU usage
   - [ ] Visual indicator (system tray icon pulses when listening)
-- [ ] Voice Activity Detection (VAD) — stop recording when you stop talking
-- [ ] STT: Whisper (local, `whisper-small` model for speed)
+- [x] Voice Activity Detection (VAD) — stop recording when you stop talking (`record_until_silence`)
+- [x] STT: Whisper (local, `whisper-small` model for speed)
   - [ ] Fallback to Deepgram if Whisper is too slow on hardware
-- [ ] Claude integration via Anthropic SDK
-  - [ ] System prompt defining Bobby's personality (eager junior, efficient, slightly sarcastic)
-  - [ ] Tool use: Claude decides which tool to call based on your command
-  - [ ] Streaming responses for faster TTS onset
-- [ ] TTS: ElevenLabs
-  - [ ] Pick/tune Bobby's voice
-  - [ ] Stream audio chunks as they arrive (don't wait for full response)
-- [ ] Full loop test: wake → speak → response → speak back
-- [ ] Interrupt support: saying "bobby stop" mid-response cancels it
+- [x] Claude integration via Anthropic SDK
+  - [x] System prompt defining Bobby's personality (eager junior, efficient, slightly sarcastic)
+  - [x] Tool use: Claude decides which tool to call based on your command
+  - [ ] Streaming responses for faster TTS onset (currently downloads full audio then plays)
+- [x] TTS: ElevenLabs (REST API via httpx, pyttsx3 fallback)
+  - [x] Voice configured via `elevenlabs_voice_id` in config
+  - [ ] True streaming (chunk-by-chunk) — currently full-response download
+- [x] Full loop test: wake → speak → response → speak back ✓ (verified 2026-05-08)
+- [x] Stop commands after wake word: "stop", "never mind", "cancel" → Bobby says "Got it." and resets
+- [ ] Interrupt support: saying "bobby stop" *mid-response* cancels ongoing speech
 - [ ] **[MANDATORY TESTS — Phase 1]**
-  - [ ] Empty audio / silence → STT returns nothing → LLM is NOT called
+  - [x] Empty audio / silence → STT returns `""` → LLM is NOT called (handled in `pipeline.py` + `stt.py`)
   - [ ] Claude API timeout → Bobby says "I'm having trouble, try again" (no crash)
-  - [ ] ElevenLabs down → fallback TTS activates, Bobby still responds
+  - [ ] ElevenLabs down → fallback TTS activates, Bobby still responds (fallback exists, test not written)
 
 **UX polish:**
-- [ ] Subtle audio cue when wake word fires (soft chime)
+- [ ] Subtle audio cue when wake word fires (soft chime) — `_play_chime()` is a stub
 - [ ] Different audio cue for "thinking" vs "done"
 - [ ] Response latency target: < 2s for simple commands, < 4s for complex
   - Note: Claude tool-use requires 2 API round trips — budget ~300ms Whisper + ~400ms Haiku + ~300ms ElevenLabs first chunk = ~1s minimum for simple commands. Sonnet adds ~700ms. These are real numbers, not aspirational.
@@ -378,8 +379,8 @@ bobby/
 
 ## Current Status
 
-- [~] Phase 0 — Project Setup (scaffold done, CI + WoL prereq remaining)
-- [ ] Phase 1 — Core Voice Pipeline
+- [x] Phase 0 — Project Setup (CI done, WoL prereq deferred — waiting on Pi Zero 2)
+- [~] Phase 1 — Core Voice Pipeline (core loop working; streaming TTS, mid-response interrupt, chimes, timeout tests remaining)
 - [ ] Phase 2 — OS Control
 - [ ] Phase 3 — Memory Layer
 - [ ] Phase 4 — Phone Bridge

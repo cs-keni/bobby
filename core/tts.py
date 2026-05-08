@@ -47,21 +47,28 @@ def _try_elevenlabs(text: str) -> bool:
 
     try:
         import httpx
+        import miniaudio
         import numpy as np
         import sounddevice as sd
 
-        # Call ElevenLabs REST API directly — avoids SDK version churn
-        # pcm_22050: raw 16-bit signed PCM at 22050Hz, playable directly with sounddevice
         response = httpx.post(
             f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
             headers={"xi-api-key": api_key, "Content-Type": "application/json"},
-            json={"text": text, "model_id": "eleven_turbo_v2_5", "output_format": "pcm_22050"},
+            json={"text": text, "model_id": "eleven_turbo_v2_5", "output_format": "mp3_44100_128"},
             timeout=30,
         )
         response.raise_for_status()
 
-        audio = np.frombuffer(response.content, dtype=np.int16).astype(np.float32) / 32768.0
-        sd.play(audio, samplerate=22050)
+        content_type = response.headers.get("content-type", "")
+        if "audio" not in content_type:
+            log.warning(f"ElevenLabs returned unexpected content-type: {content_type!r} — body: {response.text[:200]}")
+            return False
+
+        decoded = miniaudio.decode(response.content)
+        audio = np.array(decoded.samples, dtype=np.int16).astype(np.float32) / 32768.0
+        if decoded.nchannels == 2:
+            audio = audio.reshape(-1, 2)
+        sd.play(audio, samplerate=decoded.sample_rate)
         sd.wait()
         return True
 

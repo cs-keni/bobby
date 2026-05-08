@@ -6,6 +6,7 @@ For Electron apps (VS Code, Discord, Slack), use subprocess to launch
 and rely on keyboard shortcuts rather than UI automation.
 """
 
+import os
 import shlex
 import subprocess
 import sys
@@ -35,6 +36,16 @@ DANGEROUS_PATTERNS = [
     "dd if=",
     ":(){:|:&};:",  # fork bomb
 ]
+
+
+def _is_wsl() -> bool:
+    """Detect if running inside WSL (Windows Subsystem for Linux)."""
+    if sys.platform == "win32":
+        return False
+    try:
+        return "microsoft" in os.uname().release.lower()
+    except AttributeError:
+        return False
 
 
 def _is_dangerous(command: str) -> bool:
@@ -77,9 +88,25 @@ def open_app(name: str, admin: bool = False) -> ToolResult:
     executable = APP_MAP.get(name.lower(), name)
 
     try:
-        if admin and sys.platform == "win32":
-            import ctypes
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, None, None, 1)
+        on_windows = sys.platform == "win32"
+        on_wsl = _is_wsl()
+
+        if admin:
+            if on_windows:
+                import ctypes
+                ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, None, None, 1)
+            elif on_wsl:
+                # PowerShell can elevate from WSL; ShellExecuteW is Windows-only
+                subprocess.Popen(
+                    f'powershell.exe -Command "Start-Process \'{executable}\' -Verb RunAs"',
+                    shell=True,
+                )
+            else:
+                subprocess.Popen(["sudo", executable])
+        elif on_windows or on_wsl:
+            # cmd.exe 'start' searches Windows App Paths registry — needed for apps like
+            # Chrome and Spotify that aren't in PATH. Works on both native Windows and WSL.
+            subprocess.Popen(f'cmd.exe /c start "" "{executable}"', shell=True)
         else:
             subprocess.Popen(executable, shell=True)
 

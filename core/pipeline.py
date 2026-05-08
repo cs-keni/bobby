@@ -117,8 +117,9 @@ def run() -> None:
 
     try:
         while True:
-            # Wait for wake word
-            _listening.wait()
+            # Wait for wake word — use timeout so Ctrl+C is delivered on Windows
+            if not _listening.wait(timeout=0.5):
+                continue
             _listening.clear()
 
             _play_chime("wake")

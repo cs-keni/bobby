@@ -18,6 +18,7 @@ dependencies = [
 
     # Text-to-speech
     "elevenlabs>=1.9.0",
+    "miniaudio>=1.59",        # MP3 decoding for ElevenLabs output
     "pyttsx3>=2.90",          # fallback TTS
 
     # OS control
