@@ -18,6 +18,51 @@ from tools.registry import register_tool
 
 log = get_logger(__name__)
 
+# Default app name → executable mapping.
+# Extend without touching code by adding app_aliases: { name: exe } to config.yaml.
+APP_MAP: dict[str, str] = {
+    "chrome": "chrome",
+    "google chrome": "chrome",
+    "discord": "discord",
+    "vscode": "code",
+    "vs code": "code",
+    "visual studio code": "code",
+    "riot": "riotclientservices",
+    "riot client": "riotclientservices",
+    "spotify": "spotify",
+    "notepad": "notepad",
+    "explorer": "explorer",
+    "file explorer": "explorer",
+    "terminal": "wt",
+    "windows terminal": "wt",
+    "cmd": "cmd",
+    "command prompt": "cmd",
+    "task manager": "taskmgr",
+    "settings": "ms-settings:",
+    "calculator": "calc",
+    "edge": "msedge",
+    "microsoft edge": "msedge",
+    "paint": "mspaint",
+    "word": "winword",
+    "excel": "excel",
+    "powerpoint": "powerpnt",
+    "outlook": "outlook",
+    "slack": "slack",
+    "zoom": "zoom",
+    "obs": "obs64",
+    "steam": "steam",
+}
+
+
+def _get_app_map() -> dict[str, str]:
+    """Return APP_MAP merged with any app_aliases from config.yaml."""
+    merged = dict(APP_MAP)
+    overrides = config.get("app_aliases", {})
+    if isinstance(overrides, dict):
+        merged.update({k.lower(): v for k, v in overrides.items()})
+    return merged
+
+
 # Commands that require explicit user confirmation before executing.
 # This list is also the source of truth for the safety test.
 DANGEROUS_PATTERNS = [
@@ -69,23 +114,8 @@ def _is_dangerous(command: str) -> bool:
     },
 )
 def open_app(name: str, admin: bool = False) -> ToolResult:
-    APP_MAP = {
-        "chrome": "chrome",
-        "google chrome": "chrome",
-        "discord": "discord",
-        "vscode": "code",
-        "vs code": "code",
-        "visual studio code": "code",
-        "riot": "riotclientservices",
-        "riot client": "riotclientservices",
-        "spotify": "spotify",
-        "notepad": "notepad",
-        "explorer": "explorer",
-        "terminal": "wt",
-        "windows terminal": "wt",
-    }
-
-    executable = APP_MAP.get(name.lower(), name)
+    app_map = _get_app_map()
+    executable = app_map.get(name.lower(), name)
 
     try:
         on_windows = sys.platform == "win32"
@@ -157,8 +187,10 @@ def confirm_destructive_command(command: str, reason: str = "") -> ToolResult:
         },
     },
 )
-def execute_terminal(command: str, silent: bool = False) -> ToolResult:
-    if _is_dangerous(command):
+def execute_terminal(command: str, silent: bool = False, confirmed: bool = False) -> ToolResult:
+    # confirmed=True is set by the pipeline after receiving explicit voice confirmation.
+    # It is NOT in the tool schema — Claude never sets it; only the pipeline does.
+    if _is_dangerous(command) and not confirmed:
         return ToolResult(
             success=False,
             message=(

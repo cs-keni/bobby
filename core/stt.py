@@ -1,31 +1,33 @@
 """Speech-to-text via Whisper (local) with Deepgram cloud fallback."""
 
-import io
 import threading
+import time
 from typing import Callable
 
 import numpy as np
 import sounddevice as sd
-import whisper
 
 from core import config
 from core.logging import get_logger
 
 log = get_logger(__name__)
 
-_model: whisper.Whisper | None = None
+_model = None  # whisper.Whisper, lazy-loaded on first transcription call
 _model_lock = threading.Lock()
 
 SAMPLE_RATE = 16_000
 SILENCE_THRESHOLD = 0.01   # RMS below this = silence
 SILENCE_DURATION = 1.2     # seconds of silence before stopping recording
 MIN_AUDIO_DURATION = 0.3   # ignore clips shorter than this (avoids sending noise)
+SPEECH_START_TIMEOUT = 3.0  # give up if no speech begins within this many seconds
 
 
-def _load_model() -> whisper.Whisper:
+def _load_model():
+    """Load Whisper on first call. Heavy import deferred so tests can import stt without whisper."""
     global _model
     with _model_lock:
         if _model is None:
+            import whisper
             model_name = config.get("whisper_model", "small")
             log.info(f"Loading Whisper model: {model_name}")
             _model = whisper.load_model(model_name)
@@ -52,7 +54,10 @@ def transcribe(audio: np.ndarray) -> str:
 def record_until_silence(on_speech_detected: Callable | None = None) -> np.ndarray:
     """
     Record audio from the microphone until silence is detected.
-    Returns the recorded audio as a numpy array.
+
+    Two independent timeouts:
+    - SPEECH_START_TIMEOUT: give up if the user hasn't started speaking yet
+    - 30s hard cap: stop even if the user is still talking (runaway guard)
     """
     frames: list[np.ndarray] = []
     silence_frames = 0
@@ -75,10 +80,14 @@ def record_until_silence(on_speech_detected: Callable | None = None) -> np.ndarr
             silence_frames += 1
 
     stop_event = threading.Event()
+    start_time = time.monotonic()
 
     def monitor():
         while not stop_event.is_set():
             if speech_started and silence_frames >= silence_limit:
+                stop_event.set()
+            elif not speech_started and (time.monotonic() - start_time) >= SPEECH_START_TIMEOUT:
+                # Mic never triggered — give up rather than waiting 30s
                 stop_event.set()
             stop_event.wait(0.05)
 
@@ -86,7 +95,7 @@ def record_until_silence(on_speech_detected: Callable | None = None) -> np.ndarr
     monitor_thread.start()
 
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=512, callback=callback):
-        stop_event.wait(timeout=30)  # max 30 seconds per utterance
+        stop_event.wait(timeout=30)  # hard cap: never record more than 30s
 
     monitor_thread.join(timeout=1)
 

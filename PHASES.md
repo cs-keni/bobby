@@ -106,10 +106,10 @@ bobby/
 - [x] Full loop test: wake → speak → response → speak back ✓ (verified 2026-05-08)
 - [x] Stop commands after wake word: "stop", "never mind", "cancel" → Bobby says "Got it." and resets
 - [ ] Interrupt support: saying "bobby stop" *mid-response* cancels ongoing speech
-- [ ] **[MANDATORY TESTS — Phase 1]**
-  - [x] Empty audio / silence → STT returns `""` → LLM is NOT called (handled in `pipeline.py` + `stt.py`)
-  - [ ] Claude API timeout → Bobby says "I'm having trouble, try again" (no crash)
-  - [ ] ElevenLabs down → fallback TTS activates, Bobby still responds (fallback exists, test not written)
+- [ ] **[MANDATORY TESTS — Phase 1]** *(tests written in `tests/test_pipeline.py` + `tests/test_os_control.py`; verify they pass before Phase 2 ships)*
+  - [x] Empty audio / silence → STT returns `""` → LLM is NOT called
+  - [x] Claude API timeout → Bobby says "I'm having trouble, try again" (no crash)
+  - [x] ElevenLabs down → fallback TTS activates, Bobby still responds
 
 **UX polish:**
 - [ ] Subtle audio cue when wake word fires (soft chime) — `_play_chime()` is a stub

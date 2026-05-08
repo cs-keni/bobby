@@ -16,20 +16,20 @@ dependencies = [
     "sounddevice>=0.4.6",
     "numpy>=1.26.0",
 
-    # Text-to-speech
-    "elevenlabs>=1.9.0",
+    # Text-to-speech (ElevenLabs via REST — no SDK needed)
+    "httpx>=0.27.0",          # REST calls to ElevenLabs API
     "miniaudio>=1.59",        # MP3 decoding for ElevenLabs output
     "pyttsx3>=2.90",          # fallback TTS
 
-    # OS control
-    "pywinauto>=0.6.8",
-    "pywin32>=306",
+    # OS control (Windows-specific packages excluded on Linux/macOS)
+    "pywinauto>=0.6.8; sys_platform == 'win32'",
+    "pywin32>=306; sys_platform == 'win32'",
+    "pycaw>=0.6.1; sys_platform == 'win32'",     # Windows audio endpoint volume control
+    "comtypes>=1.4.0; sys_platform == 'win32'",  # COM interop required by pycaw
     "keyboard>=0.13.5",
     "psutil>=5.9.0",
 
-    # Memory
-    "chromadb>=0.5.0",
-    "sentence-transformers>=3.0.0",
+    # Memory (Phase 3 — chromadb + sentence-transformers deferred; adds ~1GB PyTorch)
 
     # Server
     "fastapi>=0.115.0",

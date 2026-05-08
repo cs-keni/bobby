@@ -43,9 +43,19 @@ def register_tool(
 
 
 def get_tools() -> list[dict[str, Any]]:
-    """Return all registered tools in Anthropic tool-use format."""
-    # Import tool modules to trigger registration
-    import tools.os_control  # noqa: F401
+    """Return all registered tools in Anthropic tool-use format.
+
+    Auto-discovers every tools/*.py module (except registry.py and __init__.py)
+    so new tool files require zero changes here — just drop a file and decorate.
+    """
+    import importlib
+    import pkgutil
+    import tools as _tools_pkg
+
+    for _, modname, _ in pkgutil.iter_modules(_tools_pkg.__path__):
+        if modname not in ("registry",):
+            importlib.import_module(f"tools.{modname}")
+
     return list(_tools.values())
 
 

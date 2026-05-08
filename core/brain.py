@@ -85,6 +85,7 @@ def think(
             system=SYSTEM_PROMPT,
             tools=tools,
             messages=messages,
+            timeout=10.0,
         )
     except anthropic.APITimeoutError:
         log.warning("Claude API timed out")

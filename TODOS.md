@@ -16,31 +16,34 @@ Deferred work captured during plan-eng-review. Pick these up when the time is ri
 
 ---
 
-## [ ] Plugin/Skills Interface
+## [x] Plugin/Skills Interface — RESOLVED
 
-**What:** Design a plugin interface so skills can be added without modifying Bobby's core code. Each skill is a Python file with a `register_tools() -> list[Tool]` function.
+The `@register_tool` decorator in `tools/registry.py` satisfies this requirement. Drop a new `.py` file in `tools/` with `@register_tool`-decorated functions; `get_tools()` auto-discovers it via `pkgutil.iter_modules`. No core changes needed.
 
-**Why:** If Bobby gets open-sourced, contributors will want to add Spotify, home automation, custom scripts, etc. Without a plugin interface, every PR touches core files and risks breaking things. With it, a new skill is a single file drop.
+---
 
-**When to pick up:** Phase 0 — before the tool dispatcher is built.
+## [ ] Model Routing — Refine Heuristic (Phase 10)
 
-**How to start:**
-```python
-# tools/base.py
-class Tool:
-    name: str
-    description: str
-    handler: Callable
-    parameters: dict  # JSON Schema
+**What:** The `complex_triggers` keyword list in `pipeline.py` is too broad — common words like "find" and "help" push simple tool calls to Claude Sonnet instead of Haiku, burning ~4x tokens unnecessarily.
 
-# Each skill file:
-def register_tools() -> list[Tool]:
-    return [Tool(name="open_spotify", ...)]
+**Why:** "Find chrome" or "help me open discord" are trivially simple tool dispatches. They don't need Sonnet's reasoning. The current list was written before real usage data existed.
 
-# core/brain.py discovers plugins:
-tools = load_tools_from_directory("tools/skills/")
-```
+**When to pick up:** Phase 10 (polish). After real daily-driver usage, look at the logs and find which commands are being escalated unnecessarily. Tune the list based on actual data, not guesses.
 
-**Depends on:** Phase 0 project structure.
+**How to start:** Add logging of which model was used per command, then grep the logs after a week of use. Alternatively, test whether Haiku can handle all Phase 2 commands reliably — if so, remove `complex_triggers` entirely and only escalate explicitly (e.g., "bobby, think hard about...").
+
+**Depends on:** Sufficient usage history from Phase 2+.
+
+---
+
+## [ ] Speech-Start Timeout UX — "I didn't catch that" (Phase 1 polish)
+
+**What:** `record_until_silence` now has a 3-second speech-start timeout (`SPEECH_START_TIMEOUT`). When the mic doesn't pick up audio in 3s, Bobby speaks "I didn't catch that." and resets.
+
+**Status:** Implemented in `core/stt.py` and `core/pipeline.py`. The feedback is minimal — just the spoken phrase.
+
+**When to pick up:** Phase 1 polish, alongside audio chimes. Could be improved with a subtle audio cue instead of a spoken phrase, or by distinguishing "mic failure" from "you were too quiet" with different messages.
+
+**Depends on:** Audio chime implementation (same Polish pass).
 
 ---
