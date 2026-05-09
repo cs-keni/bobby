@@ -159,25 +159,25 @@ bobby/
 ## Phase 3 — Memory Layer
 *Goal: Bobby remembers who you are and what you like.*
 
-- [ ] **Structured memory (SQLite)**
-  - [ ] Shortcuts table (name → app list / action list)
-  - [ ] Facts table (key-value: "my favorite Spotify playlist = X")
-  - [ ] Conversation history (last N turns, with timestamps)
-  - [ ] User preferences (preferred browser, default VSCode directory, etc.)
-- [ ] **Memory commands**
-  - [ ] "Bobby, remember that..." → saves a fact
-  - [ ] "Bobby, what do you know about me?" → lists stored facts
-  - [ ] "Bobby, forget X" → removes a memory
-  - [ ] "Bobby, update 'the usual' to also include Slack"
-- [ ] **Semantic memory (ChromaDB)**
+- [x] **Structured memory (SQLite)**
+  - [x] Shortcuts table (name → app list / action list) — covered by Phase 2 shortcuts.py
+  - [x] Facts table (key-value: "my favorite Spotify playlist = X") — `memory/db.py` `facts` table
+  - [x] Conversation history (last N turns, with timestamps) — `memory/db.py` `history` table + `save_turn` / `get_recent_history`
+  - [x] User preferences (preferred browser, default VSCode directory, etc.) — stored as facts via `remember_fact`
+- [x] **Memory commands**
+  - [x] "Bobby, remember that..." → `remember_fact` tool saves a fact
+  - [x] "Bobby, what do you know about me?" → `recall_facts` tool lists stored facts
+  - [x] "Bobby, forget X" → `forget_fact` tool removes a memory
+  - [x] "Bobby, update 'the usual' to also include Slack" → update via `save_shortcut` (Phase 2) or `remember_fact`
+- [ ] **Semantic memory (ChromaDB)** — deferred (heavy dependency, no clear latency budget yet)
   - [ ] Embed past conversations and facts as vectors
   - [ ] Relevant memories surface automatically when related topics come up
   - [ ] "Bobby, what was that thing I mentioned about the animation library?" → finds it
   - [ ] **[CRITICAL TEST]** Memory injection bounded: `get_relevant_memories(query, max_tokens=4000)` — never overflow Claude's context window regardless of memory volume
   - [ ] Run ChromaDB query in parallel with Claude API call to hide latency
-- [ ] **Session context**
-  - [ ] Bobby carries context across a session (remembers what you asked 10 min ago)
-  - [ ] Summaries of old sessions stored for long-term recall
+- [x] **Session context**
+  - [x] Bobby carries context across a session (remembers what you asked 10 min ago) — `_history` list in pipeline
+  - [~] Summaries of old sessions stored for long-term recall — raw turns persisted to DB per session; summarization deferred
 - [ ] **Proactive memory**
   - [ ] Bobby learns patterns: "You usually open Riot on Friday evenings — want me to open it?"
   - [ ] Opt-in behavior, configurable
@@ -273,26 +273,26 @@ bobby/
 ## Phase 7 — Media & Smart Integrations
 *Goal: Bobby plugs into the apps you actually use.*
 
-- [ ] **Spotify control**
+- [ ] **Spotify control** — deferred (requires Spotify Web API OAuth setup)
   - [ ] Play/pause/skip/volume
   - [ ] "Play something chill" → mood-based playlist
   - [ ] "What's this song?" → reads current track
-- [ ] **System media controls**
-  - [ ] Global play/pause (works on any media)
-  - [ ] Next/previous track
-- [ ] **Google Calendar integration**
+- [x] **System media controls** (`tools/media.py` `system_media`)
+  - [x] Global play/pause (works on any media)
+  - [x] Next/previous track
+- [ ] **Google Calendar integration** — deferred (OAuth setup required)
   - [ ] "What do I have today?" → reads schedule
   - [ ] "Add a meeting at 3pm called X"
   - [ ] Proactive: Bobby announces upcoming events 10 min before
-- [ ] **Clipboard sync**
-  - [ ] Copy on PC → accessible from phone (and vice versa)
-  - [ ] "Bobby, what's in my clipboard?" → reads it aloud
+- [x] **Clipboard sync** (`tools/media.py` `get_clipboard` / `set_clipboard`)
+  - [x] "Bobby, what's in my clipboard?" → reads it aloud
+  - [ ] Copy on PC → accessible from phone (Phase 4 concern)
 - [ ] **Notifications**
   - [ ] Bobby monitors PC notifications and can surface important ones to phone
   - [ ] Configurable per-app rules ("only bug me about Discord DMs, not server messages")
-- [ ] **Screenshot workflow**
-  - [ ] "Bobby, screenshot this" → captures active window or full screen
-  - [ ] Optionally: annotate with Claude Vision before saving
+- [x] **Screenshot workflow** (`tools/media.py` `take_screenshot`)
+  - [x] "Bobby, screenshot this" → captures full desktop via mss, saves to ~/Pictures/Bobby/
+  - [ ] Annotate with Claude Vision before saving (Phase 9)
 
 ---
 
@@ -385,11 +385,11 @@ bobby/
 - [x] Phase 0 — Project Setup (CI done, WoL prereq deferred — waiting on Pi Zero 2)
 - [~] Phase 1 — Core Voice Pipeline (core loop working; streaming TTS, mid-response interrupt, chimes, timeout tests remaining)
 - [~] Phase 2 — OS Control (core done; volume control + context-aware window targeting deferred)
-- [ ] Phase 3 — Memory Layer
+- [~] Phase 3 — Memory Layer (core SQLite facts + history done, memory injection wired into pipeline; ChromaDB semantic search deferred)
 - [ ] Phase 4 — Phone Bridge
 - [ ] Phase 5 — Remote Screen & Files
 - [ ] Phase 6 — Browser Automation
-- [ ] Phase 7 — Smart Integrations
+- [~] Phase 7 — Smart Integrations (quick wins done: media keys, clipboard, screenshot; Spotify API + Google Calendar deferred)
 - [ ] Phase 8 — Routines & Proactive
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver

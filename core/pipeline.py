@@ -4,6 +4,8 @@ This is the entry point for running Bobby on PC.
 """
 
 import threading
+import uuid
+from datetime import datetime, timezone
 
 from core import config
 from core.brain import think
@@ -21,6 +23,8 @@ _history: list[dict] = []
 _history_lock = threading.Lock()
 _listening = threading.Event()
 _speaking = threading.Event()
+
+_session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_") + str(uuid.uuid4())[:6]
 
 HISTORY_MAX_TURNS = 20  # keep last N turns to avoid runaway context growth
 
@@ -80,10 +84,14 @@ def _process_command(text: str) -> None:
     complex_triggers = ["remember", "what did", "summarize", "explain"]
     use_complex = any(t in text.lower() for t in complex_triggers)
 
+    from memory.db import get_memory_context, save_turn
+    memory_context = get_memory_context()
+
     response_text, tool_calls = think(
         user_message=text,
         tools=get_tools(),
         conversation_history=history,
+        memory_context=memory_context,
         use_complex_model=use_complex,
     )
 
@@ -131,6 +139,7 @@ def _process_command(text: str) -> None:
             user_message="",
             tools=get_tools(),
             conversation_history=history,
+            memory_context=memory_context,
             use_complex_model=use_complex,
         )
 
@@ -159,6 +168,10 @@ def _process_command(text: str) -> None:
             _history.append({"role": "assistant", "content": response_text or ""})
 
         _history[:] = _trim_history(_history)
+
+    save_turn(_session_id, "user", text)
+    if response_text:
+        save_turn(_session_id, "assistant", response_text)
 
 
 def run() -> None:

@@ -47,3 +47,15 @@ The `@register_tool` decorator in `tools/registry.py` satisfies this requirement
 **Depends on:** Audio chime implementation (same Polish pass).
 
 ---
+
+## [ ] Manual Testing Checklist
+
+Things automated tests cannot cover — must be verified on real hardware.
+
+1. **Volume control (pycaw on Windows)** — run Bobby in native Windows Python (not WSL), say "set volume to 30" and "get volume", verify Windows audio changes
+2. **End-to-end voice loop** — say "hey jarvis" (wake word), speak "open notepad", verify Notepad opens and Bobby confirms
+3. **"The usual" shortcut** — say "open the usual", verify Chrome, Discord, and Spotify all launch
+4. **system_power confirmation gate** — say "restart my PC", say "no" when prompted, verify PC does NOT restart
+5. **Memory persistence across sessions** — say "remember that my name is [name]", restart Bobby (`Ctrl+C` then re-run), say "what's my name?" — verify Bobby recalls it from DB
+6. **Screenshot** — say "take a screenshot", verify `~/Pictures/Bobby/` contains the PNG
+7. **Media keys** — say "pause music" while Spotify is playing, verify it pauses
