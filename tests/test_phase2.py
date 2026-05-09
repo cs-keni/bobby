@@ -116,6 +116,99 @@ def test_save_shortcut_empty_apps(tmp_db):
 
 
 # ---------------------------------------------------------------------------
+# get_volume / set_volume — pycaw mocked
+# ---------------------------------------------------------------------------
+
+def _make_pycaw_mock(level_scalar=0.5, muted=False):
+    """Return a mock that mimics the pycaw IAudioEndpointVolume COM interface."""
+    mock = MagicMock()
+    mock.GetMasterVolumeLevelScalar.return_value = level_scalar
+    mock.GetMute.return_value = muted
+    return mock
+
+
+def test_get_volume_win32():
+    with patch("tools.os_control._pycaw_interface") as mock_iface, \
+         patch("tools.os_control.sys") as mock_sys:
+        mock_sys.platform = "win32"
+        mock_iface.return_value = _make_pycaw_mock(level_scalar=0.6, muted=False)
+        from tools.os_control import get_volume
+        result = get_volume()
+    assert result.success
+    assert result.data["level"] == 60
+    assert result.data["muted"] is False
+
+
+def test_get_volume_muted():
+    with patch("tools.os_control._pycaw_interface") as mock_iface, \
+         patch("tools.os_control.sys") as mock_sys:
+        mock_sys.platform = "win32"
+        mock_iface.return_value = _make_pycaw_mock(level_scalar=0.3, muted=True)
+        from tools.os_control import get_volume
+        result = get_volume()
+    assert result.success
+    assert "muted" in result.message
+    assert result.data["muted"] is True
+
+
+def test_set_volume_level():
+    with patch("tools.os_control._pycaw_interface") as mock_iface, \
+         patch("tools.os_control.sys") as mock_sys:
+        mock_sys.platform = "win32"
+        vol_mock = _make_pycaw_mock()
+        mock_iface.return_value = vol_mock
+        from tools.os_control import set_volume
+        result = set_volume(level=75)
+    assert result.success
+    assert "75%" in result.message
+    vol_mock.SetMasterVolumeLevelScalar.assert_called_once_with(0.75, None)
+
+
+def test_set_volume_mute():
+    with patch("tools.os_control._pycaw_interface") as mock_iface, \
+         patch("tools.os_control.sys") as mock_sys:
+        mock_sys.platform = "win32"
+        vol_mock = _make_pycaw_mock()
+        mock_iface.return_value = vol_mock
+        from tools.os_control import set_volume
+        result = set_volume(mute=True)
+    assert result.success
+    assert "muted" in result.message.lower()
+    vol_mock.SetMute.assert_called_once_with(True, None)
+
+
+def test_set_volume_level_and_mute():
+    with patch("tools.os_control._pycaw_interface") as mock_iface, \
+         patch("tools.os_control.sys") as mock_sys:
+        mock_sys.platform = "win32"
+        vol_mock = _make_pycaw_mock()
+        mock_iface.return_value = vol_mock
+        from tools.os_control import set_volume
+        result = set_volume(level=30, mute=False)
+    assert result.success
+    vol_mock.SetMasterVolumeLevelScalar.assert_called_once()
+    vol_mock.SetMute.assert_called_once_with(False, None)
+
+
+def test_set_volume_no_args():
+    from tools.os_control import set_volume
+    result = set_volume()
+    assert not result.success
+
+
+def test_set_volume_clamps_level():
+    """Level > 100 should clamp to 1.0 scalar, not crash."""
+    with patch("tools.os_control._pycaw_interface") as mock_iface, \
+         patch("tools.os_control.sys") as mock_sys:
+        mock_sys.platform = "win32"
+        vol_mock = _make_pycaw_mock()
+        mock_iface.return_value = vol_mock
+        from tools.os_control import set_volume
+        set_volume(level=150)
+    vol_mock.SetMasterVolumeLevelScalar.assert_called_once_with(1.0, None)
+
+
+# ---------------------------------------------------------------------------
 # system_power — requires_confirmation gate
 # ---------------------------------------------------------------------------
 

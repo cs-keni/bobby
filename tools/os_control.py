@@ -253,39 +253,137 @@ def execute_terminal(command: str, silent: bool = False, confirmed: bool = False
         return ToolResult(success=False, message=f"Failed to run command: {e}")
 
 
+# PowerShell C# that calls Windows Audio Session API (WASAPI) from WSL.
+# Compiles inline — ~500ms first call, cached by PowerShell for the session.
+_PS_AUDIO_CS = r"""Add-Type -TypeDefinition @'
+using System; using System.Runtime.InteropServices;
+[Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IAudioEndpointVolume {
+    int n0();int n1();int n2();int n3();
+    [PreserveSig] int SetMasterVolumeLevelScalar(float f, Guid g);
+    int n5();
+    [PreserveSig] int GetMasterVolumeLevelScalar(out float f);
+    int n7();int n8();int n9();int n10();
+    [PreserveSig] int SetMute([MarshalAs(UnmanagedType.Bool)] bool b, Guid g);
+    [PreserveSig] int GetMute([MarshalAs(UnmanagedType.Bool)] out bool b);
+}
+[Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IMMDevice {
+    [PreserveSig] int Activate(ref Guid iid, uint ctx, IntPtr p, [MarshalAs(UnmanagedType.IUnknown)] out object v);
+}
+[Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IMMDeviceEnumerator {
+    int n0(int a, uint b, [MarshalAs(UnmanagedType.IUnknown)] out object c);
+    [PreserveSig] int GetDefaultAudioEndpoint(int flow, int role, out IMMDevice dev);
+}
+[ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+public class MMDevEnum {}
+public static class AudioCtrl {
+    static readonly Guid AEV_IID = typeof(IAudioEndpointVolume).GUID;
+    static IAudioEndpointVolume GetAEV() {
+        var en = (IMMDeviceEnumerator)new MMDevEnum();
+        IMMDevice dev; en.GetDefaultAudioEndpoint(0, 1, out dev);
+        object obj; dev.Activate(ref AEV_IID, 23, IntPtr.Zero, out obj);
+        return (IAudioEndpointVolume)obj;
+    }
+    public static int GetLevel() { var v=GetAEV(); float f; v.GetMasterVolumeLevelScalar(out f); return (int)Math.Round(f*100); }
+    public static void SetLevel(float s) { GetAEV().SetMasterVolumeLevelScalar(s, Guid.Empty); }
+    public static bool GetMuted() { var v=GetAEV(); bool m; v.GetMute(out m); return m; }
+    public static void SetMuted(bool m) { GetAEV().SetMute(m, Guid.Empty); }
+}
+'@
+"""
+
+
+def _ps_run(cmd: str) -> tuple[int, str]:
+    exe = "powershell.exe" if sys.platform != "win32" else "powershell"
+    r = subprocess.run(
+        [exe, "-NoProfile", "-NonInteractive", "-Command", cmd],
+        capture_output=True, text=True, timeout=15,
+    )
+    return r.returncode, r.stdout.strip()
+
+
+def _pycaw_interface():
+    from ctypes import cast, POINTER
+    from comtypes import CLSCTX_ALL
+    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+    devices = AudioUtilities.GetSpeakers()
+    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    return cast(interface, POINTER(IAudioEndpointVolume))
+
+
+@register_tool(
+    name="get_volume",
+    description="Get the current system volume (0–100) and whether it is muted.",
+    parameters={},
+)
+def get_volume() -> ToolResult:
+    try:
+        if sys.platform == "win32":
+            vol = _pycaw_interface()
+            level = int(round(vol.GetMasterVolumeLevelScalar() * 100))
+            muted = bool(vol.GetMute())
+        else:
+            rc, out = _ps_run(_PS_AUDIO_CS + "[AudioCtrl]::GetLevel()\n[AudioCtrl]::GetMuted()")
+            if rc != 0:
+                return ToolResult(success=False, message="Couldn't read volume.")
+            lines = out.splitlines()
+            level = int(lines[0]) if lines else -1
+            muted = len(lines) > 1 and lines[1].strip().lower() == "true"
+
+        state = "muted" if muted else f"at {level}%"
+        return ToolResult(success=True, message=f"Volume is {state}.", data={"level": level, "muted": muted})
+    except Exception as e:
+        log.error(f"get_volume failed: {e}")
+        return ToolResult(success=False, message=f"Couldn't read volume: {e}")
+
+
 @register_tool(
     name="set_volume",
-    description="Set system volume level or mute/unmute.",
+    description=(
+        "Set system volume (0–100) and/or mute/unmute. "
+        "Specify level, mute, or both. Examples: set to 50, mute it, unmute and set to 30."
+    ),
     parameters={
         "level": {
             "type": "integer",
-            "description": "Volume level 0-100, or -1 to toggle mute",
+            "description": "Volume 0–100. Omit to leave the level unchanged.",
+        },
+        "mute": {
+            "type": "boolean",
+            "description": "true = mute, false = unmute. Omit to leave mute state unchanged.",
         },
     },
 )
-def set_volume(level: int) -> ToolResult:
+def set_volume(level: int | None = None, mute: bool | None = None) -> ToolResult:
+    if level is None and mute is None:
+        return ToolResult(success=False, message="Specify level (0–100) and/or mute (true/false).")
     try:
         if sys.platform == "win32":
-            from ctypes import cast, POINTER
-            from comtypes import CLSCTX_ALL
-            from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-
-            devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = cast(interface, POINTER(IAudioEndpointVolume))
-
-            if level == -1:
-                muted = volume.GetMute()
-                volume.SetMute(not muted, None)
-                return ToolResult(success=True, message="Muted." if not muted else "Unmuted.")
-
-            scalar = max(0.0, min(1.0, level / 100.0))
-            volume.SetMasterVolumeLevelScalar(scalar, None)
-            return ToolResult(success=True, message=f"Volume set to {level}%.")
+            vol = _pycaw_interface()
+            if level is not None:
+                vol.SetMasterVolumeLevelScalar(max(0.0, min(1.0, level / 100.0)), None)
+            if mute is not None:
+                vol.SetMute(mute, None)
         else:
-            return ToolResult(success=False, message="Volume control not yet supported on this platform.")
+            ps_cmds = [_PS_AUDIO_CS]
+            if level is not None:
+                ps_cmds.append(f"[AudioCtrl]::SetLevel({max(0.0, min(1.0, level / 100.0))}f)")
+            if mute is not None:
+                ps_cmds.append(f"[AudioCtrl]::SetMuted({'$true' if mute else '$false'})")
+            rc, out = _ps_run("\n".join(ps_cmds))
+            if rc != 0:
+                return ToolResult(success=False, message=f"Volume change failed.")
+
+        parts = []
+        if level is not None:
+            parts.append(f"volume set to {level}%")
+        if mute is not None:
+            parts.append("muted" if mute else "unmuted")
+        return ToolResult(success=True, message=", ".join(parts).capitalize() + ".")
     except Exception as e:
-        log.error(f"Volume control failed: {e}")
+        log.error(f"set_volume failed: {e}")
         return ToolResult(success=False, message=f"Couldn't change volume: {e}")
 
 

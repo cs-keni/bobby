@@ -136,7 +136,7 @@ bobby/
   - [x] Switch focus to a specific app (win32gui on Windows, PowerShell fallback from WSL)
   - [x] Close app (alt+f4 via `press_keys`)
 - [x] **System controls**
-  - [ ] Volume up/down/mute/set to X% (deferred — pycaw integration)
+  - [x] Volume up/down/mute/set to X% (`get_volume` + `set_volume(level, mute)` — pycaw on Windows, PowerShell WASAPI fallback on WSL)
   - [x] Screen brightness (`set_brightness` via WMI PowerShell)
   - [x] Lock/sleep/restart/shutdown PC (`system_power` — hard voice confirmation gate)
 - [x] **Terminal execution**
