@@ -13,13 +13,14 @@ dependencies = [
 
     # Speech-to-text
     "openai-whisper>=20240930",
-    "sounddevice>=0.4.6",
     "numpy>=1.26.0",
+    # Audio capture/playback via parecord+ffplay (PulseAudio) — no PortAudio needed on WSL2
+    # sounddevice removed: conda's libportaudio is ALSA-only, has no devices in WSL2
 
     # Text-to-speech (ElevenLabs via REST — no SDK needed)
     "httpx>=0.27.0",          # REST calls to ElevenLabs API
-    "miniaudio>=1.59",        # MP3 decoding for ElevenLabs output
     "pyttsx3>=2.90",          # fallback TTS
+    # miniaudio removed: ElevenLabs MP3 now piped directly to ffplay
 
     # OS control (Windows-specific packages excluded on Linux/macOS)
     "pywinauto>=0.6.8; sys_platform == 'win32'",

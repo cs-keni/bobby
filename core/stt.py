@@ -1,11 +1,15 @@
-"""Speech-to-text via Whisper (local) with Deepgram cloud fallback."""
+"""Speech-to-text via Whisper (local) with Deepgram cloud fallback.
 
+Audio capture uses parecord (PulseAudio) rather than sounddevice/PortAudio
+because conda's libportaudio only has ALSA support, which has no devices in WSL2.
+"""
+
+import subprocess
 import threading
 import time
 from typing import Callable
 
 import numpy as np
-import sounddevice as sd
 
 from core import config
 from core.logging import get_logger
@@ -20,6 +24,17 @@ SILENCE_THRESHOLD = 0.01   # RMS below this = silence
 SILENCE_DURATION = 1.2     # seconds of silence before stopping recording
 MIN_AUDIO_DURATION = 0.3   # ignore clips shorter than this (avoids sending noise)
 SPEECH_START_TIMEOUT = 3.0  # give up if no speech begins within this many seconds
+
+_CHUNK_SAMPLES = 512
+_BYTES_PER_CHUNK = _CHUNK_SAMPLES * 2  # int16
+
+
+def _parecord_cmd() -> list[str]:
+    cmd = ["parecord", "--rate=16000", "--channels=1", "--format=s16le", "--raw"]
+    device = config.get("audio_device", "")
+    if device:
+        cmd.append(f"--device={device}")
+    return cmd
 
 
 def _load_model():
@@ -93,43 +108,50 @@ def record_until_silence(on_speech_detected: Callable | None = None) -> np.ndarr
     """
     frames: list[np.ndarray] = []
     silence_frames = 0
-    silence_limit = int(SILENCE_DURATION * SAMPLE_RATE / 512)
+    silence_limit = int(SILENCE_DURATION * SAMPLE_RATE / _CHUNK_SAMPLES)
     speech_started = False
-
-    def callback(indata: np.ndarray, frame_count: int, time_info, status):
-        nonlocal silence_frames, speech_started
-        chunk = indata[:, 0].copy()
-        frames.append(chunk)
-
-        rms = float(np.sqrt(np.mean(chunk**2)))
-        if rms > SILENCE_THRESHOLD:
-            silence_frames = 0
-            if not speech_started:
-                speech_started = True
-                if on_speech_detected:
-                    on_speech_detected()
-        else:
-            silence_frames += 1
-
     stop_event = threading.Event()
     start_time = time.monotonic()
 
-    def monitor():
-        while not stop_event.is_set():
-            if speech_started and silence_frames >= silence_limit:
-                stop_event.set()
-            elif not speech_started and (time.monotonic() - start_time) >= SPEECH_START_TIMEOUT:
-                # Mic never triggered — give up rather than waiting 30s
-                stop_event.set()
-            stop_event.wait(0.05)
+    def _record():
+        nonlocal silence_frames, speech_started
+        cmd = _parecord_cmd()
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        try:
+            while not stop_event.is_set():
+                data = proc.stdout.read(_BYTES_PER_CHUNK)
+                if len(data) < _BYTES_PER_CHUNK:
+                    break
+                # Normalize int16 → float32 in [-1, 1]
+                chunk = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+                frames.append(chunk)
 
-    monitor_thread = threading.Thread(target=monitor, daemon=True)
-    monitor_thread.start()
+                rms = float(np.sqrt(np.mean(chunk**2)))
+                if rms > SILENCE_THRESHOLD:
+                    silence_frames = 0
+                    if not speech_started:
+                        speech_started = True
+                        if on_speech_detected:
+                            on_speech_detected()
+                else:
+                    silence_frames += 1
 
-    with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, blocksize=512, callback=callback):
-        stop_event.wait(timeout=30)  # hard cap: never record more than 30s
+                if speech_started and silence_frames >= silence_limit:
+                    stop_event.set()
+                elif not speech_started and (time.monotonic() - start_time) >= SPEECH_START_TIMEOUT:
+                    stop_event.set()
+        finally:
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
 
-    monitor_thread.join(timeout=1)
+    record_thread = threading.Thread(target=_record, daemon=True)
+    record_thread.start()
+    stop_event.wait(timeout=30)
+    stop_event.set()
+    record_thread.join(timeout=3)
 
     if not frames:
         return np.array([], dtype=np.float32)

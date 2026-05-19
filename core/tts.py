@@ -38,6 +38,16 @@ def speak(text: str) -> None:
     _speak_fallback(text)
 
 
+def _play_mp3(mp3_bytes: bytes) -> None:
+    """Play MP3 bytes via ffplay → PulseAudio (WSL2-safe, no PortAudio needed)."""
+    import subprocess
+    proc = subprocess.Popen(
+        ["ffplay", "-nodisp", "-autoexit", "-f", "mp3", "-i", "pipe:0", "-loglevel", "quiet"],
+        stdin=subprocess.PIPE,
+    )
+    proc.communicate(input=mp3_bytes)
+
+
 def _try_elevenlabs(text: str) -> bool:
     api_key = config.get("elevenlabs_api_key")
     voice_id = config.get("elevenlabs_voice_id")
@@ -47,9 +57,6 @@ def _try_elevenlabs(text: str) -> bool:
 
     try:
         import httpx
-        import miniaudio
-        import numpy as np
-        import sounddevice as sd
 
         response = httpx.post(
             f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
@@ -64,12 +71,7 @@ def _try_elevenlabs(text: str) -> bool:
             log.warning(f"ElevenLabs returned unexpected content-type: {content_type!r} — body: {response.text[:200]}")
             return False
 
-        decoded = miniaudio.decode(response.content)
-        audio = np.array(decoded.samples, dtype=np.int16).astype(np.float32) / 32768.0
-        if decoded.nchannels == 2:
-            audio = audio.reshape(-1, 2)
-        sd.play(audio, samplerate=decoded.sample_rate)
-        sd.wait()
+        _play_mp3(response.content)
         return True
 
     except Exception as e:
