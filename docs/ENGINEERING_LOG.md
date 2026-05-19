@@ -2,6 +2,38 @@
 
 ---
 
+## 2026-05-19 (continued — /review session)
+
+### Session: /review of existing codebase before Phase 11 (Claude Sonnet 4.6)
+
+**Commits:**
+- `cb96fa1` — feat: add phone server bridge + fix review bugs
+
+**Bugs found and fixed:**
+- `brain.py` `think()`: appended empty `user: ""` turn after `user: [tool_results]` on second call — consecutive user messages violated Anthropic API contract. Fixed: skip append when both `user_message` and `memory_context` are empty.
+- `pipeline.py` `main()`: `server_enabled` defaulted to `True` — Bobby would crash silently if uvicorn not installed. Fixed to `False`; user's config.yaml now has explicit `server_enabled: true`.
+- `pipeline.py` `_start_server_thread()`: uvicorn import in daemon thread failed silently on ImportError. Fixed with try/except + log.error.
+- `pipeline.py` second `think()` call: was re-injecting `memory_context` with `user_message=""`, producing `"<data>memory</data>\n\nUser said: "` — broken content. Fixed: pass `memory_context=""` for the tool follow-up call.
+- `server/main.py`: `allow_credentials=True` + `allow_origins=["*"]` is CORS spec violation. Removed `allow_credentials`.
+- `stt.py` `transcribe()`: `result["text"]` (KeyError risk) vs `result.get("text","")` in `transcribe_from_bytes()`. Unified to `.get()`.
+
+**New files shipped (pre-existing uncommitted work):**
+- `server/auth.py`, `server/main.py`, `server/routes/` — FastAPI server bridge for phone PWA
+- `core/stt.py` `transcribe_from_bytes()` — WebM/Opus from browser MediaRecorder
+- `core/tts.py` `synthesize()` — returns MP3 bytes without playing locally
+- `docs/AI_CONTEXT.md` — AI model routing doc for agent handoffs
+
+**Warnings (not fixed — low priority):**
+- `tts.py`: `synthesize()` duplicates ElevenLabs call setup from `_try_elevenlabs()` — DRY issue, same URL/model/format in two places.
+- `phone/` directory (React PWA) left untracked — needs `dist/` build before it's useful; commit when ready to deploy.
+
+**Status at handoff:**
+- Pre-existing uncommitted changes are now committed and pushed (`cb96fa1`).
+- Phase 11 prerequisites remain: install Obsidian Local REST API plugin, run WSL curl test.
+- Phase 11 T1–T8 tasks ready to implement after WSL gate passes.
+
+---
+
 ## 2026-05-19
 
 ### Session: Model routing + Phase 11 design (Claude Sonnet 4.6)
