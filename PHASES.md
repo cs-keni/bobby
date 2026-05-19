@@ -124,7 +124,7 @@ bobby/
 
 - [x] **App launcher**: open any installed app by name
   - [x] Fuzzy match: "open vs" → VSCode (`_resolve_app`: exact → substring → difflib → passthrough)
-  - [ ] Admin mode support: `open riot in admin mode`
+  - [x] Admin mode support: `open riot in admin mode` — `admin=true` param → PowerShell `Start-Process -Verb RunAs` (UAC prompt fires on Windows side)
   - [x] Note: pywinauto/Win32 accessibility APIs work well for native Windows apps but are unreliable for Electron apps (VS Code, Discord, Slack). For those, use `subprocess` to launch and rely on voice/keyboard control rather than UI automation.
 - [x] **Named shortcuts system** (`tools/shortcuts.py`)
   - [x] "The usual" → Chrome + Discord + Spotify (seeded default; user can edit)
