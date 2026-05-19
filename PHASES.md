@@ -456,8 +456,8 @@ CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`
 |--------|---------|-----|------|--------|----------|
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 1 | APPROVED | Phase 11 scoped; 3 arch fixes (decorator, vault_context param, background indexing); 2 cherry-picks (auto-session-capture, morning brief, CP1 proactive capture, CP2 daily note) |
 | Outside Voice | `/office-hours` + subagent | Independent 2nd opinion | 1 | issues_found | 5 findings, 3 cross-model tensions resolved |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | CLEAR | 4 issues resolved, 2 critical gaps addressed, 20 test paths mapped |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 2 | CLEAR (PLAN) | 11 issues found, 8 decisions locked (param format, vault injection, notifications module, config nested keys, path traversal, trust model, second think() call, enabled flag); 4 Codex cross-model tensions resolved; 13 test paths mapped |
 | Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | — |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
-**VERDICT:** ENG REVIEW CLEARED — 4 architecture decisions locked, 2 critical safety tests mandated, outside voice integrated. Ready to implement Phase 0.
+**VERDICT:** ENG REVIEW CLEARED (Phase 11) — 11 issues found and resolved, 8 architecture decisions locked, Codex outside voice ran (4 cross-model tensions resolved). 8 implementation tasks defined (T1-T8). Ready to implement Phase 11 Phase A after WSL networking gate passes.
