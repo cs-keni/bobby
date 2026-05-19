@@ -94,9 +94,11 @@ class WakeWordDetector:
         log.info("Wake word detection stopped")
 
     def _listen_loop(self) -> None:
+        import time
         cmd = _parecord_cmd()
         log.debug(f"Starting audio capture: {' '.join(cmd)}")
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        _cooldown_until = 0.0  # monotonic time before which detections are suppressed
         try:
             while not self._stop.is_set():
                 data = proc.stdout.read(_BYTES_PER_CHUNK)
@@ -106,10 +108,15 @@ class WakeWordDetector:
                 audio = np.frombuffer(data, dtype=np.int16)
                 predictions = self._model.predict(audio)
 
+                now = time.monotonic()
+                if now < _cooldown_until:
+                    continue
+
                 for _, score in predictions.items():
                     if score >= DETECTION_THRESHOLD:
                         log.info(f"Wake word detected! (confidence: {score:.2f})")
                         self._model.reset()
+                        _cooldown_until = now + 3.0  # suppress re-trigger for 3s
                         self.on_wake()
                         break
         finally:
