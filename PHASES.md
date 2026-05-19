@@ -187,31 +187,38 @@ bobby/
 ## Phase 4 — Phone Bridge & Remote Voice
 *Goal: Control Bobby from your phone, anywhere.*
 
-- [ ] **FastAPI server on PC**
-  - [ ] REST endpoints for commands
-  - [ ] WebSocket for real-time voice streaming
-  - [ ] Auth (simple token-based — this is personal use)
-- [ ] **Local network access**
-  - [ ] Phone connects to PC via local IP
-  - [ ] mDNS: phone finds Bobby at `bobby.local` automatically
+- [x] **FastAPI server on PC** (`server/main.py`, `server/auth.py`, `server/routes/`)
+  - [x] REST endpoints: `POST /api/command` (text → response + audio), `POST /api/voice` (audio upload → transcribe → respond)
+  - [x] `GET /api/health` (no auth — for connection status polling)
+  - [ ] WebSocket for real-time streaming — deferred; REST polling is sufficient for MVP
+  - [x] Auth (Bearer token from `config.yaml` `server_token`)
+  - [x] Server starts automatically on `bobby` launch (daemon thread, `server_enabled: true`)
+  - [x] Logs local IP + port on startup for easy phone setup
+- [x] **Local network access**
+  - [x] Phone connects to PC via local IP (printed on Bobby startup)
+  - [ ] mDNS: `bobby.local` — deferred (requires `zeroconf` install + platform testing)
 - [ ] **Cloudflare Tunnel (external access)**
-  - [ ] Bobby reachable from anywhere via a private domain (e.g., `bobby.yourdomain.com`)
+  - [ ] Install `cloudflared`, run `cloudflared tunnel --url http://localhost:8765`
   - [ ] No port forwarding, no exposed public IP
-- [ ] **React PWA (phone web app)**
-  - [ ] Voice input via browser mic (Web Speech API or MediaRecorder)
-  - [ ] Text fallback input
-  - [ ] Response playback (TTS audio streamed back to phone)
-  - [ ] Works offline for cached commands
-  - [ ] "Add to Home Screen" for app-like experience
-- [ ] **Wake-on-LAN**
-  - [ ] "Bobby, turn on my PC" from phone
-  - [ ] Sends WoL magic packet via your router or a always-on device (Raspberry Pi / router script)
-- [ ] **Remote command parity**
-  - [ ] Every Phase 2 command works from the phone too
+- [x] **React PWA (phone web app)** (`phone/`)
+  - [x] Voice input via browser mic (MediaRecorder API → WebM/Opus → POST /api/voice)
+  - [x] Text fallback input with send button
+  - [x] Response playback (MP3 audio from ElevenLabs decoded + played on phone)
+  - [x] "Add to Home Screen" — PWA manifest + iOS/Android meta tags
+  - [x] Settings modal (server URL + token stored in localStorage)
+  - [x] Connection status badge (polls /api/health every 15s)
+  - [x] Processing state with animated thinking dots
+  - [x] Conversation history displayed as chat bubbles
+- [ ] **Wake-on-LAN** — deferred (needs Raspberry Pi or always-on device)
+- [x] **Remote command parity** — all Phase 2/3 tools accessible via API
 
 **UX polish:**
 - [ ] Haptic feedback on phone when Bobby starts responding
-- [ ] Connection status indicator (green = online, yellow = local only, red = offline)
+- [x] Connection status indicator (green = online, amber = checking, red = offline)
+
+**Build & run:**
+- Dev: `cd phone && npm install && npm run dev` (proxies `/api` to `localhost:8765`)
+- Production: `npm run build` → FastAPI auto-serves `phone/dist/` at `/`
 
 ---
 
@@ -370,7 +377,6 @@ bobby/
 
 - [ ] **Voice cloning**: Make Bobby sound like a specific character or voice
 - [ ] **Multi-room**: Bobby on a Raspberry Pi in other rooms, connects to same brain
-- [ ] **Obsidian integration**: Bobby reads your notes and second brain
 - [ ] **Email/Slack**: Read and draft messages via voice
 - [ ] **Code assistant mode**: Bobby runs tests, reads terminal errors, suggests fixes in VSCode
 - [ ] **Native mobile app** (React Native / Expo): background wake word on phone
@@ -380,19 +386,67 @@ bobby/
 
 ---
 
+## Phase 11 — Second Brain (Obsidian Integration)
+*Goal: Bobby becomes a queryable version of your mind.*
+
+Design doc: [`~/.gstack/projects/cs-keni-bobby/keni-main-design-20260519-102214.md`](~/.gstack/projects/cs-keni-bobby/keni-main-design-20260519-102214.md)
+CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`](~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md)
+
+**Prerequisites (before any code):**
+- [ ] Install "Local REST API" Obsidian community plugin + copy API key
+- [ ] WSL networking test: `curl http://$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):27123/` → `{"status":"OK"}`
+- [ ] Add `obsidian:` block to `config.yaml` (enabled: false until WSL test passes)
+- [ ] Run `/plan-eng-review` on Phase A before writing code
+
+### Phase A — Local REST API + Voice Capture
+
+- [ ] `tools/obsidian.py`: `capture_to_obsidian`, `read_obsidian_note`, `search_obsidian`
+  - [ ] All tools use `@register_tool(name=..., description=..., parameters=...)` — explicit args required
+  - [ ] HTTP calls wrapped in try/except; unreachable Obsidian → spoken error message
+  - [ ] API host from config (NOT localhost — WSL2 networking)
+- [ ] Register obsidian tools in `tools/__init__.py` / loader
+- [ ] `config.yaml` obsidian block: `enabled`, `api_host`, `api_port`, `api_key`, `vault_path`, `inbox_folder`, `index_file`, `max_index_tokens`
+- [ ] **Success gate:** "Bobby, note that I want to look into WebRTC" → note in Obsidian inbox within 3s; used daily for 1 week
+
+### Phase B — Karpathy Index + Proactive Surfacing
+
+- [ ] `build_vault_index()` tool: list note titles + first 3 lines via REST, Claude generates `VAULT_INDEX.md`
+  - [ ] Runs in background thread (NOT in `_run_command()` — would hold `_processing_lock`)
+  - [ ] Bobby speaks progress + completion via TTS
+- [ ] Auto-update: `capture_to_obsidian` appends one line to `## Recent Captures` in VAULT_INDEX.md
+- [ ] `vault_context: str = ""` param added to `think()` in `brain.py`
+  - [ ] Injected as system role message (trusted — NOT via `<data>` XML tags)
+  - [ ] `MAX_INDEX_TOKENS = 3000` guard before injection
+- [ ] Proactive surfacing instruction added to system prompt
+- [ ] **CP2:** Bobby creates/opens today's daily note on startup (all captures default-link to it)
+- [ ] **Auto-session-capture:** End-of-session summary appended to daily note automatically
+- [ ] **Morning brief:** "Good morning Bobby" → synthesizes inbox + recent captures
+- [ ] **Success gate:** Bobby mentions a relevant note unprompted at least once per day
+
+### Phase C — Personality Profile
+
+- [ ] `build_personality_profile()`: batched note reads + Claude synthesis → writes `BOBBY_PROFILE.md`
+- [ ] `update_personality_profile()`: last-30-days incremental refresh (manual trigger only)
+- [ ] `BOBBY_PROFILE.md` injected into system prompt (~1,000 token budget, separate section)
+- [ ] **CP1:** Proactive capture suggestions mid-conversation ("Want me to save that to Obsidian?")
+- [ ] **Success gate:** "Bobby, how would I think about X?" sounds like you. Profile has ≥10 documented opinions with note citations.
+
+---
+
 ## Current Status
 
 - [x] Phase 0 — Project Setup (CI done, WoL prereq deferred — waiting on Pi Zero 2)
 - [~] Phase 1 — Core Voice Pipeline (core loop working; streaming TTS, mid-response interrupt, chimes, timeout tests remaining)
 - [~] Phase 2 — OS Control (core done; volume control + context-aware window targeting deferred)
 - [~] Phase 3 — Memory Layer (core SQLite facts + history done, memory injection wired into pipeline; ChromaDB semantic search deferred)
-- [ ] Phase 4 — Phone Bridge
+- [~] Phase 4 — Phone Bridge (server + PWA done; Cloudflare Tunnel + mDNS + WoL deferred)
 - [ ] Phase 5 — Remote Screen & Files
 - [ ] Phase 6 — Browser Automation
 - [~] Phase 7 — Smart Integrations (quick wins done: media keys, clipboard, screenshot; Spotify API + Google Calendar deferred)
 - [ ] Phase 8 — Routines & Proactive
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver
+- [ ] Phase 11 — Second Brain (Obsidian) — prerequisites pending; eng review required before Phase A
 
 ---
 
@@ -400,7 +454,7 @@ bobby/
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
-| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 1 | APPROVED | Phase 11 scoped; 3 arch fixes (decorator, vault_context param, background indexing); 2 cherry-picks (auto-session-capture, morning brief, CP1 proactive capture, CP2 daily note) |
 | Outside Voice | `/office-hours` + subagent | Independent 2nd opinion | 1 | issues_found | 5 findings, 3 cross-model tensions resolved |
 | Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | CLEAR | 4 issues resolved, 2 critical gaps addressed, 20 test paths mapped |
 | Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | — |
