@@ -77,6 +77,33 @@ def _try_elevenlabs(text: str) -> bool:
         return False
 
 
+def synthesize(text: str) -> bytes | None:
+    """Return raw ElevenLabs MP3 bytes without playing. None on failure."""
+    if not text.strip():
+        return None
+
+    api_key = config.get("elevenlabs_api_key")
+    voice_id = config.get("elevenlabs_voice_id")
+    if not api_key or not voice_id:
+        return None
+
+    try:
+        import httpx
+        response = httpx.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+            headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+            json={"text": text, "model_id": "eleven_turbo_v2_5", "output_format": "mp3_44100_128"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        if "audio" not in response.headers.get("content-type", ""):
+            return None
+        return response.content
+    except Exception as e:
+        log.warning(f"ElevenLabs synthesize error: {e}")
+        return None
+
+
 def _speak_fallback(text: str) -> None:
     engine = _get_fallback()
     engine.say(text)

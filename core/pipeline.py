@@ -24,6 +24,9 @@ _history_lock = threading.Lock()
 _listening = threading.Event()
 _speaking = threading.Event()
 
+# Serializes command execution — prevents voice + API from running simultaneously
+_processing_lock = threading.Lock()
+
 _session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_") + str(uuid.uuid4())[:6]
 
 HISTORY_MAX_TURNS = 20  # keep last N turns to avoid runaway context growth
@@ -70,17 +73,22 @@ def _trim_history(history: list[dict]) -> list[dict]:
     return trimmed
 
 
-def _process_command(text: str) -> None:
+def _run_command(text: str, via_api: bool = False) -> str:
+    """
+    Core command processing: think + execute tools + return response text.
+    No audio side effects — callers decide how to deliver the response.
+
+    via_api=True: dangerous commands that require voice confirmation are blocked
+    with a message instead of prompting the microphone.
+    """
     if not text.strip():
-        return
+        return ""
 
     log.info(f"You: {text}")
 
     with _history_lock:
         history = list(_history)
 
-    # Escalate to Sonnet only for genuine reasoning tasks, not simple tool calls.
-    # "find chrome", "help me open discord" should stay on Haiku.
     complex_triggers = ["remember", "what did", "summarize", "explain"]
     use_complex = any(t in text.lower() for t in complex_triggers)
 
@@ -95,20 +103,20 @@ def _process_command(text: str) -> None:
         use_complex_model=use_complex,
     )
 
-    # Execute tool calls, enforce hard confirmation gate, collect results
     tool_results = []
     for call in tool_calls:
         log.info(f"Tool: {call['name']}({call['input']})")
         result = dispatch_tool(call["name"], call["input"])
 
-        # Hard confirmation gate — not delegated to Claude's judgment.
-        # When a tool signals requires_confirmation, we get explicit voice input
-        # before allowing execution. The pipeline then re-dispatches with confirmed=True.
         if result.data.get("requires_confirmation"):
             command = result.data.get("command", "that action")
-            if _confirm_via_voice(command):
-                # Support tools that specify their own retry (e.g. system_power).
-                # Falls back to execute_terminal for plain shell commands.
+            if via_api:
+                # Can't prompt the microphone from an API call — block it.
+                result = ToolResult(
+                    success=False,
+                    message=f"Action requires voice confirmation. Please use Bobby's microphone interface to run: {command}",
+                )
+            elif _confirm_via_voice(command):
                 retry_tool = result.data.get("confirm_and_retry_tool", "execute_terminal")
                 retry_input = result.data.get(
                     "confirm_and_retry_input",
@@ -139,21 +147,14 @@ def _process_command(text: str) -> None:
             user_message="",
             tools=get_tools(),
             conversation_history=history,
-            memory_context=memory_context,
+            memory_context="",  # already injected in first turn; don't repeat
             use_complex_model=use_complex,
         )
 
     if response_text:
         log.info(f"Bobby: {response_text}")
-        _speaking.set()
-        try:
-            speak(response_text)
-        finally:
-            _speaking.clear()
 
     # Persist full history including tool_use/tool_result pairs.
-    # The Anthropic API requires these to appear as matched pairs in conversation history —
-    # stripping them causes API validation errors on subsequent tool-using turns.
     with _history_lock:
         _history.append({"role": "user", "content": text})
         if tool_calls:
@@ -173,6 +174,46 @@ def _process_command(text: str) -> None:
     if response_text:
         save_turn(_session_id, "assistant", response_text)
 
+    return response_text or ""
+
+
+def _process_command(text: str) -> None:
+    """Voice pipeline handler: run command and speak the response locally."""
+    with _processing_lock:
+        response_text = _run_command(text, via_api=False)
+    if response_text:
+        _speaking.set()
+        try:
+            speak(response_text)
+        finally:
+            _speaking.clear()
+
+
+def process_text_command(text: str, return_audio: bool = True) -> dict:
+    """
+    Public entry point for the server. Process a text command and return
+    the response text + optionally synthesized MP3 audio bytes.
+
+    Returns: {"response": str, "audio_bytes": bytes | None}
+    """
+    if not text.strip():
+        return {"response": "", "audio_bytes": None}
+
+    if not _processing_lock.acquire(timeout=10):
+        return {"response": "I'm busy right now, try again in a moment.", "audio_bytes": None}
+
+    try:
+        response_text = _run_command(text, via_api=True)
+    finally:
+        _processing_lock.release()
+
+    audio_bytes = None
+    if return_audio and response_text:
+        from core.tts import synthesize
+        audio_bytes = synthesize(response_text)
+
+    return {"response": response_text, "audio_bytes": audio_bytes}
+
 
 def run() -> None:
     log.info("[bold green]Bobby is starting up...[/bold green]")
@@ -191,19 +232,16 @@ def run() -> None:
 
             _play_chime("wake")
 
-            # Record until silence (or speech-start timeout)
             audio = record_until_silence(on_speech_detected=lambda: _play_chime("thinking"))
             text = transcribe(audio)
 
             if not text:
-                # If audio is very short, the mic didn't pick up anything (speech-start timeout)
                 from core.stt import SAMPLE_RATE, SPEECH_START_TIMEOUT
                 if len(audio) / SAMPLE_RATE < SPEECH_START_TIMEOUT + 0.5:
                     speak("I didn't catch that.")
                 log.debug("No speech detected after wake word")
                 continue
 
-            # Check for stop command
             if any(word in text.lower() for word in ["stop", "never mind", "cancel"]):
                 speak("Got it.")
                 continue
@@ -218,4 +256,36 @@ def run() -> None:
 
 
 def main() -> None:
+    if config.get("server_enabled", False):
+        _start_server_thread()
     run()
+
+
+def _start_server_thread() -> None:
+    """Start the FastAPI server in a daemon thread alongside the voice loop."""
+    import socket
+    import threading
+
+    host = config.get("server_host", "0.0.0.0")
+    port = int(config.get("server_port", 8765))
+
+    def _run():
+        try:
+            import uvicorn
+            from server.main import app
+        except ImportError as e:
+            log.error(f"Server dependencies not installed (pip install fastapi uvicorn): {e}")
+            return
+        uvicorn.run(app, host=host, port=port, log_level="warning")
+
+    t = threading.Thread(target=_run, daemon=True, name="bobby-server")
+    t.start()
+
+    # Log the reachable local IP for easy phone setup
+    try:
+        local_ip = socket.gethostbyname(socket.gethostname())
+    except Exception:
+        local_ip = "localhost"
+
+    log.info(f"[bold cyan]Server started → http://{local_ip}:{port}[/bold cyan]")
+    log.info(f"[dim]Phone PWA: http://{local_ip}:{port}/  |  API: http://{local_ip}:{port}/api/[/dim]")

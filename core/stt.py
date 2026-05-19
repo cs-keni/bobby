@@ -46,9 +46,41 @@ def transcribe(audio: np.ndarray) -> str:
 
     model = _load_model()
     result = model.transcribe(audio.astype(np.float32), fp16=False, language="en")
-    text = result["text"].strip()
+    text = result.get("text", "").strip()
     log.debug(f"Transcribed: {text!r}")
     return text
+
+
+def transcribe_from_bytes(audio_bytes: bytes, suffix: str = ".webm") -> str:
+    """
+    Transcribe audio from raw bytes (WebM/Opus from browser MediaRecorder, or any
+    format ffmpeg can decode). Writes to a temp file then calls Whisper.
+    Requires ffmpeg to be installed (already required by openai-whisper).
+    """
+    import os
+    import tempfile
+
+    if not audio_bytes:
+        return ""
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(audio_bytes)
+        tmp_path = f.name
+
+    try:
+        model = _load_model()
+        result = model.transcribe(tmp_path, fp16=False, language="en")
+        text = result.get("text", "").strip()
+        log.debug(f"Transcribed from bytes: {text!r}")
+        return text
+    except Exception as e:
+        log.warning(f"Whisper transcription from bytes failed: {e}")
+        return ""
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 def record_until_silence(on_speech_detected: Callable | None = None) -> np.ndarray:

@@ -70,11 +70,11 @@ def think(
 
     messages = list(conversation_history)
 
-    user_content = user_message
-    if memory_context:
-        user_content = f"{wrap_external(memory_context)}\n\nUser said: {user_message}"
-
-    messages.append({"role": "user", "content": user_content})
+    if user_message or memory_context:
+        user_content = user_message
+        if memory_context:
+            user_content = f"{wrap_external(memory_context)}\n\nUser said: {user_message}"
+        messages.append({"role": "user", "content": user_content})
 
     log.debug(f"Sending to Claude ({model}): {user_message[:80]}...")
 
