@@ -1,14 +1,15 @@
 # Current Task — Phase 11A: Obsidian Integration (Phase A)
 
-**Status:** WAITING on WSL networking gate. Do not write code until the gate passes.
+**Status:** WSL gate PASSED ✓ — ready to implement T1–T8.
 
-**Gate command** (run with Obsidian open on Windows):
+**Before starting:** Paste the Obsidian API key and vault path into `config.yaml`, then set `obsidian.enabled: true`.
+
+**WSL networking confirmed (2026-05-19):**
 ```bash
-curl http://10.255.255.254:27123/
-# Required response: {"status":"OK"}
+curl http://172.18.144.1:27123/  # returns {"status":"OK"}
 ```
-
-If it doesn't return OK: Obsidian is closed, or the Local REST API plugin isn't enabled, or the port is wrong. Fix those first.
+Use `172.18.144.1` as `api_host` — it's the WSL2 gateway, not `10.255.255.254`.
+If it stops working: `ip route show default | awk '{print $3}'` gives the current gateway IP.
 
 ---
 
@@ -174,13 +175,13 @@ if not _listening.wait(timeout=0.5):
 ### T6 — `config.yaml`: add obsidian block
 
 ```yaml
-# Obsidian second brain
+# Obsidian second brain (already in config.yaml — just fill in api_key and vault_path)
 obsidian:
-  enabled: false                          # set true after WSL curl test passes
-  api_host: "10.255.255.254"             # Windows host IP from WSL (never localhost)
+  enabled: true
+  api_host: "172.18.144.1"              # WSL2 gateway — already correct in config.yaml
   api_port: 27123
-  api_key: ""                            # from Obsidian Local REST API plugin settings
-  vault_path: "/mnt/c/Users/keni/..."   # fill in your vault path
+  api_key: "your-key-here"             # strip "Bearer " prefix — just the token
+  vault_path: "/mnt/c/Users/keni/..."  # fill in your actual vault WSL path
   inbox_folder: "Inbox"
   index_file: "VAULT_INDEX.md"
   max_index_tokens: 3000

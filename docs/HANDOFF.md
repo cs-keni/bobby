@@ -38,17 +38,27 @@ The pre-existing uncommitted changes (pipeline.py, stt.py, tts.py) have been rev
 
 ## Phase 11 — Second Brain (Obsidian Integration)
 
-### Prerequisite Gate (must pass before ANY code is written)
+### Prerequisite Gate — PASSED ✓ (2026-05-19)
 
-1. Open Obsidian on Windows
-2. Install "Local REST API" community plugin (Settings → Community Plugins → Browse → search "Local REST API")
-3. Enable it and copy the API key from its settings panel
-4. With Obsidian open, run this WSL test:
-   ```bash
-   curl http://10.255.255.254:27123/
-   # Must return: {"status":"OK"}
-   ```
-5. Only after this returns OK: add to config.yaml and begin T1
+WSL networking confirmed working:
+```bash
+curl http://172.18.144.1:27123/
+# Returns: {"status":"OK"}
+```
+
+**Correct Windows host IP: `172.18.144.1`** (WSL2 default gateway — NOT the DNS IP 10.255.255.254)
+
+**Required Windows setup (one-time, survives reboots):**
+- PowerShell (admin): `New-NetFirewallRule -DisplayName "Obsidian Local REST API" -Direction Inbound -Protocol TCP -LocalPort 27123 -Action Allow`
+- PowerShell (admin): `netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=27123 connectaddress=127.0.0.1 connectport=27123`
+- These persist across reboots. Obsidian must be open for the port to be active.
+
+**WSL2 IP instability warning:** `172.18.144.1` can change if WSL restarts. Verify with `ip route show default | awk '{print $3}'` if obsidian tools stop working. Update `obsidian.api_host` in config.yaml if it changed.
+
+**Still needed before T1:**
+- Paste API key into `config.yaml` → `obsidian.api_key` (strip the "Bearer " prefix — just the token)
+- Set `obsidian.vault_path` to your vault's WSL path (e.g. `/mnt/c/Users/keni/Documents/Obsidian/MyVault`)
+- Set `obsidian.enabled: true`
 
 ### Design Artifacts (full specs — read these before implementing)
 
@@ -64,7 +74,7 @@ The pre-existing uncommitted changes (pipeline.py, stt.py, tts.py) have been rev
 | vault_context injection | Add `vault_context: str = ""` to `think()`. When non-empty, `system` becomes list of blocks (not string). Pass to BOTH think() calls in `_run_command` (lines ~98 and ~146). |
 | Notification queue | Create `core/notifications.py` with `_tts_queue: Queue[str]`. Both pipeline.py and tools/obsidian.py import from it. Never import `_tts_queue` from pipeline (circular). |
 | Nested config keys | Add dotted-path accessor to `config.py`. `config.get("obsidian.api_key")` must resolve nested YAML. Add `OBSIDIAN_API_KEY` to env_overrides. |
-| WSL host IP | Always `10.255.255.254` (from /etc/resolv.conf). `localhost` does NOT work in WSL2. |
+| WSL host IP | `172.18.144.1` (WSL2 default gateway — verified 2026-05-19). NOT 10.255.255.254 (that's DNS). NOT localhost. Re-check with `ip route show default` if tools stop connecting. |
 | HTTP timeout | All httpx calls use `timeout=5.0` (not the ElevenLabs 30s) |
 | Trust model | Vault INDEX (Bobby-generated) = system block (trusted). Note content from `read_obsidian_note` = wrapped with `wrap_external()` (untrusted). |
 | enabled flag | Each Obsidian tool checks `config.get("obsidian.enabled", False)` first |
