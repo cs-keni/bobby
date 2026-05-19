@@ -392,32 +392,37 @@ bobby/
 Design doc: [`~/.gstack/projects/cs-keni-bobby/keni-main-design-20260519-102214.md`](~/.gstack/projects/cs-keni-bobby/keni-main-design-20260519-102214.md)
 CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`](~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md)
 
-**Prerequisites (before any code):**
-- [ ] Install "Local REST API" Obsidian community plugin + copy API key
-- [ ] WSL networking test: `curl http://$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):27123/` → `{"status":"OK"}`
-- [ ] Add `obsidian:` block to `config.yaml` (enabled: false until WSL test passes)
-- [ ] Run `/plan-eng-review` on Phase A before writing code
+**Prerequisites — DONE ✓ (2026-05-19):**
+- [x] Install "Local REST API" Obsidian community plugin + copy API key
+- [x] WSL networking test: `curl http://172.18.144.1:27123/` → `{"status":"OK"}` (gateway IP, not DNS)
+- [x] Add `obsidian:` block to `config.yaml` (enabled: true, key + vault path set)
+- [x] Run `/plan-eng-review` on Phase A — 8 tasks locked, all decisions documented
 
-### Phase A — Local REST API + Voice Capture
+### Phase A — Local REST API + Voice Capture — SHIPPED ✓ (fd1b2b1)
 
-- [ ] `tools/obsidian.py`: `capture_to_obsidian`, `read_obsidian_note`, `search_obsidian`
-  - [ ] All tools use `@register_tool(name=..., description=..., parameters=...)` — explicit args required
-  - [ ] HTTP calls wrapped in try/except; unreachable Obsidian → spoken error message
-  - [ ] API host from config (NOT localhost — WSL2 networking)
-- [ ] Register obsidian tools in `tools/__init__.py` / loader
-- [ ] `config.yaml` obsidian block: `enabled`, `api_host`, `api_port`, `api_key`, `vault_path`, `inbox_folder`, `index_file`, `max_index_tokens`
+- [x] `tools/obsidian.py`: `capture_to_obsidian`, `read_obsidian_note`, `search_obsidian`, `build_vault_index`
+  - [x] All tools use `@register_tool(name=..., description=..., parameters=...)` — explicit args
+  - [x] HTTP calls wrapped in try/except; unreachable Obsidian → spoken error message
+  - [x] API host from config (`172.18.144.1` — WSL2 gateway, not localhost)
+  - [x] Path traversal guard in `read_obsidian_note`
+  - [x] `capture_to_obsidian` appends to Recent Captures if index exists, skips silently if not
+- [x] `core/config.py`: dotted-path accessor (`config.get("obsidian.api_key")` resolves nested YAML)
+- [x] `core/notifications.py`: `_tts_queue` for background thread → pipeline notifications
+- [x] `core/brain.py`: `vault_context` param; system becomes list of blocks when non-empty
+- [x] `core/pipeline.py`: `_load_vault_context()` reads VAULT_INDEX.md; passed to both think() calls; `_tts_queue` drained in idle loop
+- [x] `config.yaml` obsidian block: all keys configured
+- [x] 19 unit tests in `tests/test_phase11.py` — 102 total passing
 - [ ] **Success gate:** "Bobby, note that I want to look into WebRTC" → note in Obsidian inbox within 3s; used daily for 1 week
 
 ### Phase B — Karpathy Index + Proactive Surfacing
 
-- [ ] `build_vault_index()` tool: list note titles + first 3 lines via REST, Claude generates `VAULT_INDEX.md`
-  - [ ] Runs in background thread (NOT in `_run_command()` — would hold `_processing_lock`)
-  - [ ] Bobby speaks progress + completion via TTS
-- [ ] Auto-update: `capture_to_obsidian` appends one line to `## Recent Captures` in VAULT_INDEX.md
-- [ ] `vault_context: str = ""` param added to `think()` in `brain.py`
-  - [ ] Injected as system role message (trusted — NOT via `<data>` XML tags)
-  - [ ] `MAX_INDEX_TOKENS = 3000` guard before injection
-- [ ] Proactive surfacing instruction added to system prompt
+- [x] `build_vault_index()` tool stub: background thread, posts "done" to `_tts_queue` (wired in Phase A)
+- [x] Auto-update: `capture_to_obsidian` appends one line to `## Recent Captures` in VAULT_INDEX.md
+- [x] `vault_context: str = ""` param added to `think()` in `brain.py`
+  - [x] Injected as system role message (trusted — NOT via `<data>` XML tags)
+  - [x] `MAX_INDEX_TOKENS = 3000` guard before injection
+- [x] Proactive surfacing instruction added to system prompt
+- [ ] `build_vault_index()` full implementation: list titles + first 3 lines, write `VAULT_INDEX.md`
 - [ ] **CP2:** Bobby creates/opens today's daily note on startup (all captures default-link to it)
 - [ ] **Auto-session-capture:** End-of-session summary appended to daily note automatically
 - [ ] **Morning brief:** "Good morning Bobby" → synthesizes inbox + recent captures
@@ -446,7 +451,7 @@ CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`
 - [ ] Phase 8 — Routines & Proactive
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver
-- [ ] Phase 11 — Second Brain (Obsidian) — prerequisites pending; eng review required before Phase A
+- [~] Phase 11 — Second Brain (Obsidian) — Phase A shipped (fd1b2b1); success gate pending (use daily for 1 week); Phase B/C remaining
 
 ---
 

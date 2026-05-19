@@ -1,6 +1,6 @@
 # Current Task — Phase 11A: Obsidian Integration (Phase A)
 
-**Status:** WSL gate PASSED ✓ — ready to implement T1–T8.
+**Status:** COMPLETE ✓ — Phase 11A shipped at fd1b2b1. All T1–T8 done, 102 tests passing.
 
 **Before starting:** Paste the Obsidian API key and vault path into `config.yaml`, then set `obsidian.enabled: true`.
 
