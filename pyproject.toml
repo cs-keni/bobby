@@ -8,8 +8,8 @@ dependencies = [
     # LLM
     "anthropic>=0.40.0",
 
-    # Wake word
-    "openwakeword>=0.6.0",
+    # Wake word (0.6.0+ requires tflite-runtime which doesn't support Python 3.13)
+    "openwakeword>=0.4.0",
 
     # Speech-to-text
     "openai-whisper>=20240930",
@@ -37,8 +37,8 @@ dependencies = [
     "websockets>=13.0",
     "python-multipart>=0.0.9",
 
-    # Browser automation
-    "playwright>=1.48.0",
+    # Browser automation (Phase 6 — not yet implemented)
+    # "playwright>=1.48.0",
 
     # Screen capture
     "mss>=9.0.1",             # fast cross-platform screenshots (MJPEG stream)

@@ -11,9 +11,11 @@ Then set wake_word_path in config.yaml to point to your .onnx file.
 import threading
 from typing import Callable
 
+import importlib.resources
+import os
+
 import numpy as np
 import sounddevice as sd
-import openwakeword.utils
 from openwakeword.model import Model
 
 from core import config
@@ -26,6 +28,27 @@ CHUNK_SIZE = 1280       # 80ms at 16kHz — OpenWakeWord's native frame size
 DETECTION_THRESHOLD = 0.5
 
 
+def _resolve_model_path(model_name: str) -> str:
+    """Resolve a model name to an ONNX file path, bundled or cached."""
+    # v0.6.0+: models cached at ~/.cache/openwakeword/
+    cache = os.path.expanduser(f"~/.cache/openwakeword/{model_name}.onnx")
+    if os.path.exists(cache):
+        return cache
+
+    # v0.4.0: models bundled inside the package at resources/models/
+    bundled = os.path.join(
+        os.path.dirname(__import__("openwakeword").__file__),
+        "resources", "models", f"{model_name}_v0.1.onnx",
+    )
+    if os.path.exists(bundled):
+        return bundled
+
+    raise FileNotFoundError(
+        f"Wake word model '{model_name}' not found. "
+        "Set wake_word_path in config.yaml to point to your .onnx file."
+    )
+
+
 class WakeWordDetector:
     def __init__(self, on_wake: Callable):
         self.on_wake = on_wake
@@ -35,20 +58,18 @@ class WakeWordDetector:
         custom_path = config.get("wake_word_path")
         wake_model = config.get("wake_word_model", "hey_jarvis")
 
-        # Download pre-trained models on first run (~10MB total, cached after)
-        log.info("Checking wake word models...")
-        openwakeword.utils.download_models()
-
         if custom_path:
-            self._model = Model(wakeword_models=[custom_path], inference_framework="onnx")
-            log.info(f"Custom wake word model loaded: {custom_path}")
+            model_path = custom_path
+            log.info(f"Custom wake word model: {custom_path}")
         else:
-            # Downloads ~2MB model file on first run (cached at ~/.cache/openwakeword/)
-            self._model = Model(wakeword_models=[wake_model], inference_framework="onnx")
+            model_path = _resolve_model_path(wake_model)
             log.warning(
-                f"Using '{wake_model}' as wake phrase placeholder — say '{wake_model.replace('_', ' ')}' to trigger Bobby. "
+                f"Using '{wake_model}' as wake phrase — say '{wake_model.replace('_', ' ')}' to trigger Bobby. "
                 "Train a custom 'hey bobby' model and set wake_word_path in config.yaml when ready."
             )
+
+        self._model = Model(wakeword_model_paths=[model_path])
+        log.info(f"Wake word model loaded: {model_path}")
 
     def start(self) -> None:
         self._stop.clear()
