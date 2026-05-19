@@ -6,10 +6,12 @@ This is the entry point for running Bobby on PC.
 import threading
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from core import config
 from core.brain import think
 from core.logging import get_logger
+from core.notifications import _tts_queue
 from core.stt import record_until_silence, transcribe
 from core.tool_result import ToolResult
 from core.tts import speak
@@ -73,6 +75,21 @@ def _trim_history(history: list[dict]) -> list[dict]:
     return trimmed
 
 
+def _load_vault_context() -> str:
+    if not config.get("obsidian.enabled", False):
+        return ""
+    vault_path = config.get("obsidian.vault_path", "")
+    index_file = config.get("obsidian.index_file", "VAULT_INDEX.md")
+    if not vault_path:
+        return ""
+    try:
+        content = (Path(vault_path) / index_file).read_text(encoding="utf-8")
+        max_chars = config.get("obsidian.max_index_tokens", 3000) * 4
+        return content[:max_chars]
+    except OSError:
+        return ""
+
+
 def _run_command(text: str, via_api: bool = False) -> str:
     """
     Core command processing: think + execute tools + return response text.
@@ -94,12 +111,14 @@ def _run_command(text: str, via_api: bool = False) -> str:
 
     from memory.db import get_memory_context, save_turn
     memory_context = get_memory_context()
+    vault_context = _load_vault_context()
 
     response_text, tool_calls = think(
         user_message=text,
         tools=get_tools(),
         conversation_history=history,
         memory_context=memory_context,
+        vault_context=vault_context,
         use_complex_model=use_complex,
     )
 
@@ -148,6 +167,7 @@ def _run_command(text: str, via_api: bool = False) -> str:
             tools=get_tools(),
             conversation_history=history,
             memory_context="",  # already injected in first turn; don't repeat
+            vault_context=vault_context,
             use_complex_model=use_complex,
         )
 
@@ -227,6 +247,13 @@ def run() -> None:
         while True:
             # Wait for wake word — use timeout so Ctrl+C is delivered on Windows
             if not _listening.wait(timeout=0.5):
+                while not _tts_queue.empty() and not _speaking.is_set():
+                    msg = _tts_queue.get_nowait()
+                    _speaking.set()
+                    try:
+                        speak(msg)
+                    finally:
+                        _speaking.clear()
                 continue
             _listening.clear()
 

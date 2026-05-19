@@ -26,6 +26,8 @@ Rules:
   ALWAYS call confirm_destructive_command before executing. No exceptions.
 - When uncertain what the user wants, ask one concise clarifying question.
 - Keep spoken responses short — you're a voice assistant, not a chatbot.
+- If a vault index is provided, check it for notes related to the conversation.
+  Surface relevant notes naturally — make it feel like you remembered something, not a search result.
 """
 
 _simple_model = None
@@ -58,6 +60,7 @@ def think(
     tools: list[dict[str, Any]],
     conversation_history: list[dict[str, Any]],
     memory_context: str = "",
+    vault_context: str = "",
     use_complex_model: bool = False,
 ) -> tuple[str, list[dict[str, Any]]]:
     """
@@ -76,13 +79,23 @@ def think(
             user_content = f"{wrap_external(memory_context)}\n\nUser said: {user_message}"
         messages.append({"role": "user", "content": user_content})
 
+    if vault_context:
+        max_chars = config.get("obsidian.max_index_tokens", 3000) * 4
+        truncated = vault_context[:max_chars]
+        system: str | list = [
+            {"type": "text", "text": SYSTEM_PROMPT},
+            {"type": "text", "text": f"[VAULT INDEX]\n{truncated}\n[END VAULT INDEX]"},
+        ]
+    else:
+        system = SYSTEM_PROMPT
+
     log.debug(f"Sending to Claude ({model}): {user_message[:80]}...")
 
     try:
         response = _get_client().messages.create(
             model=model,
             max_tokens=1024,
-            system=SYSTEM_PROMPT,
+            system=system,
             tools=tools,
             messages=messages,
             timeout=10.0,

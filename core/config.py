@@ -31,20 +31,38 @@ def _load() -> dict[str, Any]:
         "porcupine_access_key": "PORCUPINE_ACCESS_KEY",
         "deepgram_api_key": "DEEPGRAM_API_KEY",
         "server_token": "BOBBY_SERVER_TOKEN",
+        "obsidian.api_key": "OBSIDIAN_API_KEY",
     }
     for config_key, env_key in env_overrides.items():
         if val := os.getenv(env_key):
-            _config[config_key] = val
+            _set_nested(_config, config_key, val)
 
     return _config
 
 
+def _set_nested(cfg: dict, dotted_key: str, value: Any) -> None:
+    parts = dotted_key.split(".")
+    for part in parts[:-1]:
+        cfg = cfg.setdefault(part, {})
+    cfg[parts[-1]] = value
+
+
 def get(key: str, default: Any = None) -> Any:
-    return _load().get(key, default)
+    cfg = _load()
+    if "." not in key:
+        return cfg.get(key, default)
+    val: Any = cfg
+    for part in key.split("."):
+        if not isinstance(val, dict):
+            return default
+        val = val.get(part)
+        if val is None:
+            return default
+    return val
 
 
 def require(key: str) -> Any:
-    val = _load().get(key)
+    val = get(key)
     if val is None:
         raise ValueError(f"Required config key '{key}' is missing from config.yaml")
     return val
