@@ -2,6 +2,47 @@
 
 ---
 
+## 2026-05-19 (continued — WSL2 audio fix + Phase 11A)
+
+### Session: Phase 11A implementation + WSL2 audio fix (Claude Sonnet 4.6)
+
+**Commits:**
+- `fd1b2b1` (approx) — feat: implement Phase 11A Obsidian integration (T1–T8, 102 tests)
+- `cdcbf1b` — fix: replace sounddevice/PortAudio with parecord+ffplay for WSL2 audio
+
+**Root cause: PortAudio in WSL2**
+Conda's `libportaudio.so` links against conda's own `libasound.so.2` (ALSA-only, compiled without PulseAudio support). WSL2 has no ALSA devices, so `sd.query_hostapis()` returns `[{'name': 'ALSA', 'devices': []}]`. The standard fix (install `libasound2-plugins` to bridge ALSA→Pulse) doesn't reach conda's ALSA because it links the conda copy, not the system one.
+
+**Fix: replace sounddevice entirely**
+- `wake_word.py`: stream 80ms int16 chunks from `parecord` subprocess → directly fed to openwakeword
+- `stt.py`: `record_until_silence()` reads from `parecord` pipe, same silence detection logic
+- `tts.py`: ElevenLabs MP3 bytes piped to `ffplay -f mp3 -i pipe:0` — no miniaudio/sounddevice needed
+- `pyproject.toml`: removed `sounddevice` and `miniaudio` dependencies
+- Configurable via `audio_device` in config.yaml (defaults to PulseAudio default source = RDPSource in WSLg)
+
+**Confirmed working:**
+- `parecord` captures 0.5s = 7990 samples @ 16kHz via WSLg RDPSource
+- `ffplay` plays test tone via WSLg RDPSink
+- 102 tests pass (stt/tts use subprocess mocks, unaffected)
+
+**Phase 11A (Obsidian integration) — shipped at fd1b2b1:**
+- T1: dotted-path config accessor + OBSIDIAN_API_KEY env override
+- T2: `core/notifications.py` — shared TTS queue for background threads
+- T3: `tools/obsidian.py` — capture_to_obsidian, read_obsidian_note, search_obsidian, build_vault_index
+- T4: `core/brain.py` — vault_context param, system becomes list of 2 blocks when non-empty
+- T5: `core/pipeline.py` — _load_vault_context(), vault_context to both think() calls, TTS queue drain
+- T6: `config.yaml` — obsidian block with api_host=172.18.144.1, api_key, vault_path=/mnt/c/obsidian
+- T7: `tests/test_phase11.py` — 19 tests for all obsidian tools and brain vault_context behavior
+- T8: `tests/test_pipeline.py` — updated for vault_context-aware think() calls
+
+**WSL2 networking for Obsidian:**
+- Obsidian Local REST API only binds to 127.0.0.1:27123 on Windows
+- Firewall rule: allow inbound TCP 27123 from WSL subnet (172.18.128.0/24)
+- Port proxy: `netsh interface portproxy add v4tov4 listenport=27123 listenaddress=0.0.0.0 connectport=27123 connectaddress=127.0.0.1`
+- WSL2 gateway IP: 172.18.144.1 (from `ip route show default | awk '{print $3}'`)
+
+---
+
 ## 2026-05-19 (continued — /review session)
 
 ### Session: /review of existing codebase before Phase 11 (Claude Sonnet 4.6)
