@@ -497,10 +497,10 @@ def get_active_window() -> ToolResult:
 )
 def system_power(action: str, confirmed: bool = False) -> ToolResult:
     # confirmed is NOT in the schema — only the pipeline sets it after voice confirmation.
-    if action in ("restart", "shutdown") and not confirmed:
+    if action in ("lock", "restart", "shutdown") and not confirmed:
         return ToolResult(
             success=False,
-            message=f"I need confirmation before I {action} your PC.",
+            message=f"I need you to confirm before I {action} your PC. Say yes to continue.",
             data={
                 "requires_confirmation": True,
                 "command": f"{action} your PC",
