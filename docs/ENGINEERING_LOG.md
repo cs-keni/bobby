@@ -28,7 +28,7 @@ Will surface the actual error next time "set volume" fails.
 `pipeline.py main()`: `_load_model()` called in a daemon thread at startup so the first
 voice command doesn't pay the 3s Whisper cold-start penalty.
 
-Commit hash: TBD
+Commit hash: `3785102`
 
 ---
 
