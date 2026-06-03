@@ -8,7 +8,7 @@ Committed leftover gbrain setup files: `.gitignore` (add topics-for-bobby.txt ex
 `CLAUDE.md` (gbrain config + search guidance), `AGENTS.md` (new — Codex instructions),
 `phone/` (React PWA source). These were all untracked after the Phase 11B-RAG sessions.
 
-Commit hash: (pending)
+Commit hash: `193a47b`
 
 ---
 
