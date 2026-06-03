@@ -428,6 +428,49 @@ CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`
 - [ ] **Morning brief:** "Good morning Bobby" → synthesizes inbox + recent captures
 - [ ] **Success gate:** Bobby mentions a relevant note unprompted at least once per day
 
+> **Future: Vector RAG upgrade (~300+ notes threshold)**
+>
+> Current retrieval strategy is index-based (VAULT_INDEX.md titles + first 3 lines) and metadata-filtered (`search_obsidian` keyword search). This is the right call for now — zero infra, fast, and the vault is small. The trade-off is **precision over recall**: we surface notes Bobby already knows to look for, not semantically related ones it doesn't know to ask about.
+>
+> When the vault hits ~300 notes, this will start to fail: the index overflows the token budget, keyword search misses paraphrased or conceptually related notes, and proactive surfacing loses coverage.
+>
+> **Upgrade path (one-time, cheap):**
+> 1. Run an embedding pass over all vault notes using `text-embedding-3-small` (OpenAI, ~$0.01/vault) or a local model (nomic-embed, sentence-transformers).
+> 2. Store vectors in **ChromaDB** (local, already a project dependency) or **pgvector** (if Postgres is added later). Both are free and run on-device.
+> 3. Replace `_load_vault_context()` with a semantic nearest-neighbor query: embed the user's query → top-K note chunks → inject only those into `vault_context`.
+> 4. Keep the keyword fallback for exact-match note titles (high precision anchors).
+>
+> This is a RAG upgrade that preserves the existing interface (`vault_context` param to `think()`), so no brain.py or pipeline.py changes are needed — only `tools/obsidian.py` and a new `memory/vector.py` embedding store.
+
+### Phase 11B-RAG — gbrain Semantic Retrieval Migration
+
+Replaces the static VAULT_INDEX.md approach with live hybrid semantic search via gbrain.
+Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947 chunks, 100% coverage.
+
+- [x] **T1** — Install gbrain 0.42.10.0, configure PGLite at `~/.gbrain/brain.pglite`, register MCP
+  - Voyage `voyage-3-large` (1024d) for embeddings; key in `config.yaml` + `~/.zshrc`
+  - `config.yaml` gbrain block: enabled, voyage_api_key, query_top_k, max_context_tokens, intent_skip_patterns
+  - `CLAUDE.md` + `AGENTS.md` updated with GBrain Configuration + Search Guidance
+- [x] **T2** — Import Obsidian vault (1249 notes → 8947 chunks, 100% embedded). Bobby code synced (45 pages).
+  - Embed run completed (was 2% at save time, finished with Voyage credits)
+  - Verified: `embed_coverage: 1.0`, `missing_embeddings: 0`
+- [x] **T3** — `evals/golden_queries.yaml`: 25 curated golden queries across 5 categories
+  - 8 Bobby-specific, 7 AI/ML, 4 system-design, 4 software-eng, 1 NLP
+  - Smoke test: Recall@3 = 3/3 (100%) on verified queries
+- [x] **T4** — Replace `_load_vault_context()` with `_query_gbrain(user_text)` in `core/pipeline.py`
+  - Intent skip: `intent_skip_patterns` in config skip the query for pure action commands
+  - Subprocess: `gbrain query <text> --limit 5 --source-id __all__` (~1.3s)
+  - Parse CLI output (multi-line blocks), inject top-K titles + snippets as `[VAULT CONTEXT]`
+  - Silent fallback on timeout (5s), non-zero exit, or exception
+- [x] **T5** — `core/brain.py`: `system` always `list[dict]`, never `str | list`
+  - Prevents Phase C personality profile injection bug (safe append pattern)
+  - Fixed stale `obsidian.max_index_tokens` → `gbrain.max_context_tokens`
+- [ ] **T6** — `memory/ingestion.py`: Markdown H2/H3 section chunker + flat-note fallback
+  - Enables full chunk text retrieval from vault files (upgrades from ~100-char CLI snippets)
+  - Tests in `tests/test_ingestion.py`
+- [ ] **T7** — Hook `capture_to_obsidian` in `tools/obsidian.py` to push new notes to gbrain (non-blocking ~5 lines)
+- [ ] **T8** — Run post-migration eval: `gbrain query` each golden query, record Recall@5 delta vs baseline
+
 ### Phase C — Personality Profile
 
 - [ ] `build_personality_profile()`: batched note reads + Claude synthesis → writes `BOBBY_PROFILE.md`

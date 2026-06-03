@@ -3,6 +3,8 @@ Main Bobby pipeline: wake word → STT → Claude brain → TTS.
 This is the entry point for running Bobby on PC.
 """
 
+import re
+import subprocess
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -75,18 +77,75 @@ def _trim_history(history: list[dict]) -> list[dict]:
     return trimmed
 
 
-def _load_vault_context() -> str:
-    if not config.get("obsidian.enabled", False):
+_GBRAIN_BIN = str(Path.home() / ".bun" / "bin" / "gbrain")
+
+
+def _query_gbrain(user_text: str) -> str:
+    """Query gbrain for vault context semantically relevant to user_text.
+
+    Returns a formatted context string for injection into Bobby's system prompt,
+    or "" on any failure (silent fallback — gbrain outage must never break Bobby).
+
+    Skips the query for action-only commands (open, close, volume, etc.) where
+    vault context adds no value and would only add latency.
+    """
+    if not config.get("gbrain.enabled", False):
         return ""
-    vault_path = config.get("obsidian.vault_path", "")
-    index_file = config.get("obsidian.index_file", "VAULT_INDEX.md")
-    if not vault_path:
+
+    text_lower = user_text.lower().strip()
+    skip_patterns = config.get("gbrain.intent_skip_patterns", [])
+    if any(text_lower.startswith(p.lower()) for p in skip_patterns):
+        log.debug("gbrain skip: matched intent_skip_pattern")
         return ""
+
     try:
-        content = (Path(vault_path) / index_file).read_text(encoding="utf-8")
-        max_chars = config.get("obsidian.max_index_tokens", 3000) * 4
-        return content[:max_chars]
-    except OSError:
+        top_k = config.get("gbrain.query_top_k", 5)
+        max_chars = config.get("gbrain.max_context_tokens", 4000) * 4
+
+        proc = subprocess.run(
+            [_GBRAIN_BIN, "query", user_text, "--limit", str(top_k), "--source-id", "__all__"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+
+        if proc.returncode != 0 or not proc.stdout.strip():
+            if proc.returncode != 0:
+                log.debug(f"gbrain query exit {proc.returncode}: {proc.stderr[:100]}")
+            return ""
+
+        # CLI format: "[score] slug -- chunk_text\n[next result...]"
+        # Chunk text may span multiple lines — split on lines that start a new result.
+        blocks = re.split(r"\n(?=\[[\d.]+\])", proc.stdout.strip())
+        parts: list[str] = []
+        total_chars = 0
+
+        for block in blocks:
+            if " -- " not in block:
+                continue
+            header, chunk_text = block.split(" -- ", 1)
+            # header: "[0.9999] resources/category/slug-name"
+            slug = header.split("] ", 1)[-1].strip() if "] " in header else ""
+            title = slug.split("/")[-1].replace("-", " ").title() if slug else ""
+            chunk_text = chunk_text.strip()
+            if not chunk_text:
+                continue
+            entry = f"[{title}]\n{chunk_text}" if title else chunk_text
+            if total_chars + len(entry) > max_chars:
+                remaining = max_chars - total_chars
+                if remaining > 200:
+                    parts.append(entry[:remaining])
+                break
+            parts.append(entry)
+            total_chars += len(entry)
+
+        return "\n\n---\n\n".join(parts) if parts else ""
+
+    except subprocess.TimeoutExpired:
+        log.warning("gbrain query timed out (5s)")
+        return ""
+    except Exception as e:
+        log.warning(f"gbrain unavailable: {e}")
         return ""
 
 
@@ -111,7 +170,7 @@ def _run_command(text: str, via_api: bool = False) -> str:
 
     from memory.db import get_memory_context, save_turn
     memory_context = get_memory_context()
-    vault_context = _load_vault_context()
+    vault_context = _query_gbrain(text)
 
     response_text, tool_calls = think(
         user_message=text,

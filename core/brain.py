@@ -26,8 +26,8 @@ Rules:
   ALWAYS call confirm_destructive_command before executing. No exceptions.
 - When uncertain what the user wants, ask one concise clarifying question.
 - Keep spoken responses short — you're a voice assistant, not a chatbot.
-- If a vault index is provided, check it for notes related to the conversation.
-  Surface relevant notes naturally — make it feel like you remembered something, not a search result.
+- If vault context is provided, it contains semantically relevant notes retrieved from your knowledge base.
+  Reference them naturally — make it feel like you remembered something, not a search result.
 """
 
 _simple_model = None
@@ -79,15 +79,11 @@ def think(
             user_content = f"{wrap_external(memory_context)}\n\nUser said: {user_message}"
         messages.append({"role": "user", "content": user_content})
 
+    system: list[dict] = [{"type": "text", "text": SYSTEM_PROMPT}]
     if vault_context:
-        max_chars = config.get("obsidian.max_index_tokens", 3000) * 4
+        max_chars = config.get("gbrain.max_context_tokens", 4000) * 4
         truncated = vault_context[:max_chars]
-        system: str | list = [
-            {"type": "text", "text": SYSTEM_PROMPT},
-            {"type": "text", "text": f"[VAULT INDEX]\n{truncated}\n[END VAULT INDEX]"},
-        ]
-    else:
-        system = SYSTEM_PROMPT
+        system.append({"type": "text", "text": f"[VAULT CONTEXT]\n{truncated}\n[END VAULT CONTEXT]"})
 
     log.debug(f"Sending to Claude ({model}): {user_message[:80]}...")
 

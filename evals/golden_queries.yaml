@@ -1,0 +1,145 @@
+# Bobby gbrain — Golden Query Evaluation Set
+#
+# Purpose: Baseline Recall@5 before and after RAG migration changes.
+# Run: gbrain query "<query>" --limit 5 --source-id __all__
+# Pass criteria: expected_slug appears in the top-5 results.
+#
+# Categories: bobby, ai-ml, system-design, software-eng, nlp
+# Confidence: high = verified by smoke test / known slug; medium = inferred from vault audit
+
+queries:
+
+  # --- Bobby-specific knowledge ---
+
+  - query: "how does Bobby's voice pipeline work from wake word to response"
+    expected_slug: "resources/bobby/bobbys-voice-pipeline-architecture"
+    category: bobby
+    confidence: high
+
+  - query: "what are Bobby's dangerous command rules and confirmation policy"
+    expected_slug: "resources/bobby/bobbys-dangerous-command-rules"
+    category: bobby
+    confidence: high
+
+  - query: "how does Bobby's memory system work with ChromaDB SQLite Obsidian"
+    expected_slug: "resources/bobby/bobbys-memory-system-design"
+    category: bobby
+    confidence: high
+
+  - query: "what tools can Bobby call — OS control memory vault shortcuts"
+    expected_slug: "resources/bobby/bobbys-tool-registry-full-reference"
+    category: bobby
+    confidence: high
+
+  - query: "what are Bobby's config.yaml settings and schema"
+    expected_slug: "resources/bobby/bobbys-config-reference-config-yaml-schema"
+    category: bobby
+    confidence: high
+
+  - query: "Bobby model routing when to use Haiku versus Sonnet"
+    expected_slug: "resources/bobby/bobbys-model-routing-logic-haiku-vs-sonnet"
+    category: bobby
+    confidence: high
+
+  - query: "Bobby WSL2 audio pipeline PulseAudio RDPSource microphone"
+    expected_slug: "resources/bobby/bobbys-wake-word-and-audio-pipeline"
+    category: bobby
+    confidence: high
+
+  - query: "Bobby known bugs and workarounds"
+    expected_slug: "resources/bobby/bobbys-known-bugs-and-workarounds"
+    category: bobby
+    confidence: high
+
+  # --- AI / Machine Learning ---
+
+  - query: "how do vector embeddings work semantic search"
+    expected_slug: "resources/ai-machine-learning/vector-embeddings-how-they-work"
+    category: ai-ml
+    confidence: high
+
+  - query: "what is retrieval augmented generation RAG pipeline"
+    expected_slug: "resources/ai-machine-learning/retrieval-augmented-generation-rag"
+    category: ai-ml
+    confidence: high
+
+  - query: "what are chunking strategies for RAG fixed-size semantic paragraph"
+    expected_slug: "resources/ai-machine-learning/chunking-strategies-for-rag"
+    category: ai-ml
+    confidence: high
+
+  - query: "how does self-attention work query key value matrix"
+    expected_slug: "resources/ai-machine-learning/attention-mechanism-self-attention"
+    category: ai-ml
+    confidence: high
+
+  - query: "what are vector databases Pinecone Weaviate ChromaDB pgvector HNSW"
+    expected_slug: "resources/ai-machine-learning/vector-databases-pinecone-weaviate-chromadb-pgvector"
+    category: ai-ml
+    confidence: high
+
+  - query: "difference between semantic search and keyword search BM25"
+    expected_slug: "resources/ai-machine-learning/semantic-search-vs-keyword-search"
+    category: ai-ml
+    confidence: high
+
+  - query: "how does tokenization work BPE WordPiece SentencePiece"
+    expected_slug: "resources/ai-machine-learning/tokenization-bpe-wordpiece-sentencepiece"
+    category: ai-ml
+    confidence: high
+
+  - query: "LLM system design agentic loop tool use RAG reranking"
+    expected_slug: "resources/llm-system-design"
+    category: ai-ml
+    confidence: high
+
+  # --- System Design ---
+
+  - query: "how would you design a search engine index ranking"
+    expected_slug: "resources/system-design/design-a-search-engine"
+    category: system-design
+    confidence: high
+
+  - query: "how does a rate limiter work token bucket sliding window"
+    expected_slug: "resources/system-design/design-a-rate-limiter"
+    category: system-design
+    confidence: medium
+
+  - query: "CAP theorem distributed systems consistency availability partition"
+    expected_slug: "resources/system-design/cap-theorem-and-pacelc"
+    category: system-design
+    confidence: medium
+
+  - query: "database sharding horizontal scaling consistent hashing"
+    expected_slug: "resources/system-design/database-sharding"
+    category: system-design
+    confidence: medium
+
+  # --- Software Engineering ---
+
+  - query: "what is the 12-factor app methodology twelve factors"
+    expected_slug: "resources/software-engineering/12-factor-app"
+    category: software-eng
+    confidence: medium
+
+  - query: "how to write a postmortem blameless incident review"
+    expected_slug: "resources/software-engineering/postmortem"
+    category: software-eng
+    confidence: medium
+
+  - query: "error budget SRE reliability burn rate SLO SLI"
+    expected_slug: "resources/software-engineering/error-budgets"
+    category: software-eng
+    confidence: medium
+
+  - query: "backward compatibility REST API versioning semver migration"
+    expected_slug: "resources/software-engineering/backward-compatibility"
+    category: software-eng
+    confidence: medium
+
+  # --- NLP / Language ---
+
+  - query: "natural language processing overview pipeline for voice assistant"
+    expected_slug: "resources/language-linguistics/natural-language-processing-overview"
+    category: nlp
+    confidence: high

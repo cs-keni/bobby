@@ -2,6 +2,61 @@
 
 ---
 
+## 2026-06-03 — T3/T4: gbrain eval set + pipeline wiring (Claude Sonnet 4.6)
+
+**T3: `evals/golden_queries.yaml` (new file)**
+
+Created a 25-query golden eval set for measuring Recall@5 before/after RAG changes.
+Covers Bobby-specific knowledge (8 queries), AI/ML concepts (7), system design (4),
+software engineering (4), and NLP (1). Run with:
+```
+gbrain query "<query>" --limit 5 --source-id __all__
+```
+Pass = `expected_slug` appears in top-5. Confidence marked `high` for smoke-test-verified
+slugs, `medium` for slugs inferred from vault audit headings (needs one-time verification).
+
+**T4: Replace `_load_vault_context()` with `_query_gbrain()` in `core/pipeline.py`**
+
+The static VAULT_INDEX.md approach (flat title list, 3000-token cap, no semantic ranking)
+is replaced with a live gbrain hybrid search call per command:
+
+- `_GBRAIN_BIN`: module-level path constant (`~/.bun/bin/gbrain`)
+- Intent skip: commands matching `gbrain.intent_skip_patterns` (open, close, volume, etc.)
+  skip the query entirely — no latency added for pure action commands
+- Subprocess: `gbrain query <text> --limit 5 --source-id __all__` (~1.3s synchronous)
+- CLI output parse: regex split on `\n(?=\[score\])` to handle multi-line chunks
+- Token budget: `gbrain.max_context_tokens * 4` chars, truncates last entry to fit
+- Silent fallback: timeout (5s), non-zero exit, or any exception → returns ""
+
+**`core/brain.py` minor fixes:**
+- `obsidian.max_index_tokens` → `gbrain.max_context_tokens` in `think()`
+- Label: `[VAULT INDEX]` → `[VAULT CONTEXT]`
+- System prompt: "vault index" wording → "semantically relevant notes retrieved from your knowledge base"
+
+**Design note:** The gbrain CLI truncates chunk text to ~100 chars per result (display
+format, not configurable). This is enough for Bobby to surface note titles and first
+lines. Full chunk text retrieval is T6 (`memory/ingestion.py` vault file reader).
+
+---
+
+## 2026-05-21 — RAG scaling note (no code change)
+
+Documented a known precision-vs-recall tradeoff in the current Obsidian retrieval strategy and the upgrade path when the vault outgrows it.
+
+**Current approach:** index-based (`VAULT_INDEX.md` titles + first 3 lines) + metadata-filtered keyword search. High precision, low infra cost, appropriate for a small vault.
+
+**Known limitation:** at ~300+ notes, the index overflows the `MAX_INDEX_TOKENS = 3000` budget and keyword search misses semantically related but differently-worded notes. Proactive surfacing coverage degrades.
+
+**Planned upgrade (deferred — not needed yet):**
+- One-time embedding pass over all vault notes (`text-embedding-3-small` ≈ $0.01, or local model)
+- Store vectors in ChromaDB (already a dependency) or pgvector
+- Replace `_load_vault_context()` with top-K semantic retrieval; keeps `vault_context` interface intact
+- Keyword fallback for exact-match anchors
+
+Note added to Phase B in `PHASES.md`. No files changed.
+
+---
+
 ## 2026-05-19 (continued — WSL2 audio fix + Phase 11A)
 
 ### Session: Phase 11A implementation + WSL2 audio fix (Claude Sonnet 4.6)

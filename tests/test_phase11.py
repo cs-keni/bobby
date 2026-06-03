@@ -176,7 +176,8 @@ def test_search_unreachable():
 # ── brain.py vault_context ───────────────────────────────────────────────────
 
 
-def test_think_without_vault_context_uses_string_system():
+def test_think_without_vault_context_uses_list_system():
+    # system is always list[dict] — allows safe append in Phase C personality injection
     from core.brain import think
     with patch("core.brain._get_client") as mock_client_fn:
         mock_response = MagicMock()
@@ -188,7 +189,9 @@ def test_think_without_vault_context_uses_string_system():
         think(user_message="hello", tools=[], conversation_history=[])
 
         call_kwargs = mock_client.messages.create.call_args.kwargs
-        assert isinstance(call_kwargs["system"], str)
+        assert isinstance(call_kwargs["system"], list)
+        assert len(call_kwargs["system"]) == 1
+        assert call_kwargs["system"][0]["type"] == "text"
 
 
 def test_think_with_vault_context_uses_block_system():
@@ -211,7 +214,7 @@ def test_think_with_vault_context_uses_block_system():
         assert isinstance(call_kwargs["system"], list)
         assert len(call_kwargs["system"]) == 2
         assert call_kwargs["system"][1]["type"] == "text"
-        assert "VAULT INDEX" in call_kwargs["system"][1]["text"]
+        assert "VAULT CONTEXT" in call_kwargs["system"][1]["text"]
 
 
 # ── core/config.py dotted-path accessor ─────────────────────────────────────
