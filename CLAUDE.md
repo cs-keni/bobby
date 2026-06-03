@@ -43,6 +43,41 @@ Key routing rules:
 - Save progress → invoke /context-save
 - Resume context → invoke /context-restore
 
+## Learning Explanations (Non-Negotiable)
+
+After every planning session or implementation slice, include a **Design Rationale** section:
+- What decision was made and what alternatives were rejected
+- Why this approach was chosen (the tradeoff)
+- How the pieces fit together conceptually
+
+This is not optional. Kenny is actively learning agentic system design, RAG/retrieval, and evaluation — not just shipping features. If you skip this, the work has no learning value.
+
+## GBrain Configuration (configured by /setup-gbrain)
+- Mode: local-stdio
+- Engine: pglite at ~/.gbrain/brain.pglite
+- gbrain version: 0.42.10.0
+- Embedding: voyage:voyage-3-large (1024d) — key in config.yaml `gbrain.voyage_api_key`
+- MCP registered: yes (user scope, /home/keni/.bun/bin/gbrain serve)
+- Repo policy: read-write (cs-keni/bobby)
+- Brain trust: personal
+- Setup date: 2026-06-03
+
+## GBrain Search Guidance
+<!-- gstack-gbrain-search-guidance:start -->
+GBrain is set up on this machine. Prefer `gbrain search`/`gbrain query` over Grep for
+semantic questions about code or vault content. Use `gbrain code-def`/`code-refs` for
+symbol-aware lookup. Run `/sync-gbrain` to ingest the Obsidian vault.
+
+Prefer gbrain when:
+- "Where is X handled?" — `gbrain search "<terms>"` or `gbrain query "<question>"`
+- "What do I know about Y?" — `gbrain query "<question>"` (searches vault after sync)
+- Past decisions, plans — `gbrain search "<terms>"`
+
+Grep is still right for exact strings and regex. VOYAGE_API_KEY must be set in env for
+semantic search (add to shell: `export VOYAGE_API_KEY=$(cat config.yaml | grep voyage | ...)`)
+or sourced from config.yaml at Bobby startup.
+<!-- gstack-gbrain-search-guidance:end -->
+
 ## Commit and Push After Every Slice
 
 Stage specific files → commit with clear message → `git push` → log the hash in `docs/ENGINEERING_LOG.md`.

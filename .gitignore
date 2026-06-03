@@ -38,3 +38,7 @@ phone/.next/
 
 # Config with secrets (keep config.yaml.example, not config.yaml)
 config.yaml
+.gbrain-source
+
+# Vault reference lists (personal, not for repo)
+topics-for-bobby.txt

@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-06-03 — Setup artifacts commit (Claude Sonnet 4.6)
+
+Committed leftover gbrain setup files: `.gitignore` (add topics-for-bobby.txt exclusion),
+`CLAUDE.md` (gbrain config + search guidance), `AGENTS.md` (new — Codex instructions),
+`phone/` (React PWA source). These were all untracked after the Phase 11B-RAG sessions.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-03 — T6-T8: ingestion chunker, gbrain capture hook, eval run (Claude Sonnet 4.6)
 
 **T6: `memory/ingestion.py` — Markdown H2/H3 chunker (new file)**
