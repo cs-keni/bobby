@@ -12,7 +12,7 @@ Repo cleanup:
 - Deleted `topics-for-bobby.txt` (vault reference list, gitignored anyway)
 - Moved `TODOS.md` → `docs/TODOS.md`
 
-Commit hash: TBD
+Commit hash: `cab4fd9`
 
 ---
 
