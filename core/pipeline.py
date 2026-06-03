@@ -222,8 +222,10 @@ def _run_command(text: str, via_api: bool = False) -> str:
             "content": result.to_claude_content(),
         })
 
-    # If tools were called, get Bobby's final spoken response
-    if tool_calls and not response_text:
+    # If tools were called, get Bobby's final spoken response incorporating the results.
+    # Always run the second think() when tools were called — even if Claude returned
+    # an interim "I'll look that up" text, we must show the actual tool results.
+    if tool_calls:
         with _history_lock:
             history = list(_history)
         history.append({"role": "user", "content": text})
@@ -355,10 +357,12 @@ def run() -> None:
 
 
 def main() -> None:
+    from core.stt import _load_model
     from tools.obsidian import ensure_daily_note
     from tools.profile import load_profile_context
     ensure_daily_note()
     load_profile_context()  # warm cache; returns "" if feature is disabled
+    threading.Thread(target=_load_model, daemon=True, name="whisper-preload").start()
     if config.get("server_enabled", False):
         _start_server_thread()
     run()

@@ -26,11 +26,30 @@ def _get_fallback():
     return _fallback_engine
 
 
+def _strip_markdown(text: str) -> str:
+    """Remove markdown formatting so TTS reads clean prose instead of symbols."""
+    import re
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)            # **bold**
+    text = re.sub(r'\*(.+?)\*', r'\1', text)                 # *italic*
+    text = re.sub(r'__(.+?)__', r'\1', text)                 # __bold__
+    text = re.sub(r'_(.+?)_', r'\1', text)                   # _italic_
+    text = re.sub(r'`(.+?)`', r'\1', text)                   # `code`
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)  # ## headers
+    text = re.sub(r'\[(.+?)\]\([^)]*\)', r'\1', text)        # [link](url)
+    text = re.sub(r'^[-*+]\s+', '', text, flags=re.MULTILINE)   # bullet points
+    text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)   # numbered lists
+    text = re.sub(r'-{3,}', '', text)                         # --- horizontal rules
+    text = re.sub(r'\n{2,}', '. ', text)                      # blank lines → sentence break
+    text = re.sub(r'\n', ' ', text)                           # single newlines → space
+    return text.strip()
+
+
 def speak(text: str) -> None:
-    """Speak text aloud. Streams ElevenLabs chunks; falls back to pyttsx3."""
+    """Speak text aloud. Strips markdown, then streams ElevenLabs; falls back to pyttsx3."""
     if not text.strip():
         return
 
+    text = _strip_markdown(text)
     if _try_elevenlabs(text):
         return
 

@@ -2,6 +2,36 @@
 
 ---
 
+## 2026-06-03 — Post-E2E bug fixes (Claude Sonnet 4.6)
+
+Four bugs found during first real daily-driver test session.
+
+**Bug 1 (critical): Tool results never shown after `recall_facts`**
+`pipeline.py:226` had `if tool_calls and not response_text:` — when Claude returned
+both an interim "I'll look that up" text AND tool_calls simultaneously, the condition
+was False and the second `think()` was skipped. Tool results were silently discarded.
+Fix: changed to `if tool_calls:` — always run second think() when tools were called.
+
+**Bug 2: Markdown read aloud by TTS**
+`tts.py`: added `_strip_markdown()` called inside `speak()` before ElevenLabs.
+Strips `**bold**`, `*italic*`, `` `code` ``, headers, bullets, blank lines.
+
+**Bug 3: Bobby didn't know the current time/date**
+`brain.py`: inject `datetime.now()` as a formatted string appended to SYSTEM_PROMPT
+on every `think()` call. Bobby now answers "what time is it?" correctly.
+
+**Bug 4: Volume PowerShell stderr not logged**
+`os_control.py`: `_ps_run()` now logs PowerShell stderr at DEBUG level on non-zero exit.
+Will surface the actual error next time "set volume" fails.
+
+**Optimization: Whisper preloaded at startup**
+`pipeline.py main()`: `_load_model()` called in a daemon thread at startup so the first
+voice command doesn't pay the 3s Whisper cold-start penalty.
+
+Commit hash: TBD
+
+---
+
 ## 2026-06-03 — Wake word + repo cleanup (Claude Sonnet 4.6)
 
 Trained custom "hey bobby" wake word via OpenWakeWord Colab (5k examples, 20k steps, T4 GPU).

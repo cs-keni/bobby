@@ -301,6 +301,8 @@ def _ps_run(cmd: str) -> tuple[int, str]:
         [exe, "-NoProfile", "-NonInteractive", "-Command", cmd],
         capture_output=True, text=True, timeout=15,
     )
+    if r.returncode != 0 and r.stderr.strip():
+        log.debug(f"PowerShell stderr: {r.stderr.strip()[:300]}")
     return r.returncode, r.stdout.strip()
 
 

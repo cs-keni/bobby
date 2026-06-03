@@ -5,6 +5,7 @@ All external content (clipboard, files, web pages) is wrapped in <data> XML tags
 before being sent to Claude to prevent prompt injection.
 """
 
+from datetime import datetime
 from typing import Any
 
 import anthropic
@@ -80,7 +81,8 @@ def think(
             user_content = f"{wrap_external(memory_context)}\n\nUser said: {user_message}"
         messages.append({"role": "user", "content": user_content})
 
-    system: list[dict] = [{"type": "text", "text": SYSTEM_PROMPT}]
+    now = datetime.now().strftime("%A, %B %d %Y, %I:%M %p")
+    system: list[dict] = [{"type": "text", "text": SYSTEM_PROMPT + f"\n\nCurrent date and time: {now}"}]
     if vault_context:
         max_chars = config.get("gbrain.max_context_tokens", 4000) * 4
         truncated = vault_context[:max_chars]
