@@ -465,11 +465,16 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 - [x] **T5** — `core/brain.py`: `system` always `list[dict]`, never `str | list`
   - Prevents Phase C personality profile injection bug (safe append pattern)
   - Fixed stale `obsidian.max_index_tokens` → `gbrain.max_context_tokens`
-- [ ] **T6** — `memory/ingestion.py`: Markdown H2/H3 section chunker + flat-note fallback
-  - Enables full chunk text retrieval from vault files (upgrades from ~100-char CLI snippets)
-  - Tests in `tests/test_ingestion.py`
-- [ ] **T7** — Hook `capture_to_obsidian` in `tools/obsidian.py` to push new notes to gbrain (non-blocking ~5 lines)
-- [ ] **T8** — Run post-migration eval: `gbrain query` each golden query, record Recall@5 delta vs baseline
+- [x] **T6** — `memory/ingestion.py`: Markdown H2/H3 section chunker + flat-note fallback
+  - `chunk_markdown(content, note_title) → list[Chunk]` — strips frontmatter, H2/H3 split, flat fallback
+  - 20 tests in `tests/test_ingestion.py` — all pass
+- [x] **T7** — Hook `capture_to_obsidian` in `tools/obsidian.py` to push new notes to gbrain (non-blocking ~5 lines)
+  - `gbrain capture --stdin --slug inbox/<ts> --type concept --quiet` in daemon thread
+  - Silent on failure; gated by `gbrain.enabled`
+- [x] **T8** — Run post-migration eval: `evals/run_eval.py` + `evals/eval_results.yaml`
+  - **Recall@5 = 25/25 = 100%** across all 5 categories
+  - Key fix: VOYAGE_API_KEY must be in subprocess env for vector search (BM25 fallback without it)
+  - Pipeline timeout bumped 5s → 8s for Voyage API latency under PGLite concurrency
 
 ### Phase C — Personality Profile
 

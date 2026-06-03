@@ -1,0 +1,281 @@
+passed: 25
+recall: 1.0
+recall_k: 5
+results:
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-voice-pipeline-architecture
+  hit: true
+  query: how does Bobby's voice pipeline work from wake word to response
+  returned_slugs:
+  - transcripts/claude-code/cs-keni-bobby/2026-05-19-10b6f744-186
+  - projects/bobby
+  - transcripts/claude-code/cs-keni-bobby/2026-05-24-70bc5b68-58f
+  - resources/bobby/bobbys-voice-pipeline-architecture
+  - resources/bobby/bobbys-wake-word-and-audio-pipeline
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-dangerous-command-rules
+  hit: true
+  query: what are Bobby's dangerous command rules and confirmation policy
+  returned_slugs:
+  - resources/bobby/bobbys-dangerous-command-rules
+  - resources/bobby/bobbys-security-model
+  - resources/bobby/bobbys-tool-registry-full-reference
+  - resources/bobby/bobbys-shortcut-templates
+  - daily-notes/2026-06-02
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-memory-system-design
+  hit: true
+  query: how does Bobby's memory system work with ChromaDB SQLite Obsidian
+  returned_slugs:
+  - vault_index
+  - transcripts/claude-code/cs-keni-eportfolio/2026-05-21-d0f0f7a2-005
+  - resources/ai-machine-learning/ai-memory-architectures
+  - resources/bobby/bobbys-memory-system-design
+  - resources/bobby-memory-architecture
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-tool-registry-full-reference
+  hit: true
+  query: what tools can Bobby call — OS control memory vault shortcuts
+  returned_slugs:
+  - vault_index
+  - resources/bobby/bobbys-tool-registry-full-reference
+  - transcripts/claude-code/_unattributed/2026-05-07-9602b59a-5cc
+  - resources/bobby-commands
+  - daily-notes/2026-06-02
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-config-reference-config.yaml-schema
+  hit: true
+  query: what are Bobby's config.yaml settings and schema
+  returned_slugs:
+  - resources/bobby/bobbys-config-reference-config.yaml-schema
+  - vault_index
+  - config-yaml
+  - transcripts/claude-code/cs-keni-bobby/2026-05-08-2c35c575-238
+  - core-config-py
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-model-routing-logic-haiku-vs-sonnet
+  hit: true
+  query: Bobby model routing when to use Haiku versus Sonnet
+  returned_slugs:
+  - resources/bobby/bobbys-model-routing-logic-haiku-vs-sonnet
+  - transcripts/claude-code/cs-keni-bobby/2026-05-19-10b6f744-186
+  - resources/bobby/bobbys-voice-pipeline-architecture
+  - transcripts/claude-code/cs-keni-backlog/2026-05-21-a96165fd-1fa
+  - resources/bobby/bobbys-config-reference-config.yaml-schema
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-wake-word-and-audio-pipeline
+  hit: true
+  query: Bobby WSL2 audio pipeline PulseAudio RDPSource microphone
+  returned_slugs:
+  - resources/bobby/bobbys-wake-word-and-audio-pipeline
+  - resources/bobby/bobbys-voice-pipeline-architecture
+  - resources/windows-wsl2/wsl2-audio-setup-pulseaudio-wslg-rdpsource
+  - resources/wsl2-setup
+  - resources/bobby/bobbys-wsl2-quirks-and-workarounds
+- category: bobby
+  confidence: high
+  expected_slug: resources/bobby/bobbys-known-bugs-and-workarounds
+  hit: true
+  query: Bobby known bugs and workarounds
+  returned_slugs:
+  - resources/bobby/bobbys-known-bugs-and-workarounds
+  - resources/bobby/bobbys-wsl2-quirks-and-workarounds
+  - vault_index
+  - transcripts/claude-code/cs-keni-eportfolio/2026-05-24-0a2d85e4-9dc
+  - resources/language-linguistics/natural-language-processing-overview
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/vector-embeddings-how-they-work
+  hit: true
+  query: how do vector embeddings work semantic search
+  returned_slugs:
+  - resources/ai-machine-learning/vector-databases-pinecone-weaviate-chromadb-pgvector
+  - resources/ai-machine-learning/semantic-search-vs-keyword-search
+  - resources/ai-machine-learning/vector-embeddings-how-they-work
+  - resources/ai-machine-learning/vector-embeddings-how-they-work
+  - resources/ai-machine-learning/cosine-similarity-and-distance-metrics
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/retrieval-augmented-generation-rag
+  hit: true
+  query: what is retrieval augmented generation RAG pipeline
+  returned_slugs:
+  - resources/ai-machine-learning/retrieval-augmented-generation-rag
+  - resources/llm-system-design
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-21-e0ab5942-d19
+  - resources/rag-and-bobby-vector-search
+  - resources/ai-machine-learning/vector-embeddings-how-they-work
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/chunking-strategies-for-rag
+  hit: true
+  query: what are chunking strategies for RAG fixed-size semantic paragraph
+  returned_slugs:
+  - resources/ai-machine-learning/chunking-strategies-for-rag
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-25a87088-e26
+  - resources/bobby/bobbys-chromadb-upgrade-path-vector-rag-at-300-notes
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-29-18eebc04-9c6
+  - resources/llm-system-design
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/attention-mechanism-self-attention
+  hit: true
+  query: how does self-attention work query key value matrix
+  returned_slugs:
+  - resources/ai-machine-learning/attention-mechanism-self-attention
+  - resources/ai-machine-learning/multi-head-attention
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-b2f91ceb-687
+  - resources/ai-machine-learning/transformer-architecture-deep-dive
+  - resources/flashattention
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/vector-databases-pinecone-weaviate-chromadb-pgvector
+  hit: true
+  query: what are vector databases Pinecone Weaviate ChromaDB pgvector HNSW
+  returned_slugs:
+  - resources/ai-machine-learning/vector-databases-pinecone-weaviate-chromadb-pgvector
+  - resources/ai-machine-learning/vector-embeddings-how-they-work
+  - resources/ai-machine-learning/cosine-similarity-and-distance-metrics
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-25a87088-e26
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/semantic-search-vs-keyword-search
+  hit: true
+  query: difference between semantic search and keyword search BM25
+  returned_slugs:
+  - resources/ai-machine-learning/semantic-search-vs-keyword-search
+  - resources/search-systems
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+  - resources/system-design/design-a-search-engine
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/ai-machine-learning/tokenization-bpe-wordpiece-sentencepiece
+  hit: true
+  query: how does tokenization work BPE WordPiece SentencePiece
+  returned_slugs:
+  - resources/language-linguistics/writing-systems-of-the-world
+  - resources/ai-machine-learning/tokenization-bpe-wordpiece-sentencepiece
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-b2f91ceb-687
+  - tests-test_memory-py
+  - resources/ai-machine-learning/chunking-strategies-for-rag
+- category: ai-ml
+  confidence: high
+  expected_slug: resources/llm-system-design
+  hit: true
+  query: LLM system design agentic loop tool use RAG reranking
+  returned_slugs:
+  - resources/llm-system-design
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-25a87088-e26
+  - resources/ai-machine-learning/react-prompting-pattern
+  - resources/ai-machine-learning/ai-agents-and-tool-use
+  - transcripts/claude-code/cs-keni-bobby/2026-05-21-35786626-4db
+- category: system-design
+  confidence: high
+  expected_slug: resources/system-design/design-a-search-engine
+  hit: true
+  query: how would you design a search engine index ranking
+  returned_slugs:
+  - resources/system-design/design-a-search-engine
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+  - resources/search-systems
+  - resources/history-of-technology/history-of-search-engines
+  - resources/database-systems/full-text-search-postgresql-fts-elasticsearch-typesense
+- category: system-design
+  confidence: medium
+  expected_slug: resources/system-design/design-a-rate-limiter
+  hit: true
+  query: how does a rate limiter work token bucket sliding window
+  returned_slugs:
+  - resources/system-design-notes
+  - resources/system-design/rate-limiting-algorithms-token-bucket-leaky-bucket-sliding-window
+  - resources/rate-limiting
+  - resources/system-design/rate-limiting-algorithms-token-bucket-leaky-bucket-sliding-window
+  - resources/system-design/design-a-rate-limiter
+- category: system-design
+  confidence: high
+  expected_slug: resources/system-design/cap-theorem
+  hit: true
+  query: CAP theorem distributed systems consistency availability partition
+  returned_slugs:
+  - resources/system-design/cap-theorem
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-25a87088-e26
+  - resources/distributed-systems
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+  - resources/system-design-notes
+- category: system-design
+  confidence: medium
+  expected_slug: resources/system-design/database-sharding
+  hit: true
+  query: database sharding horizontal scaling consistent hashing
+  returned_slugs:
+  - notes-progress
+  - resources/scaling
+  - resources/system-design/database-sharding
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-23-0f076c86-b96
+- category: software-eng
+  confidence: high
+  expected_slug: resources/software-engineering/12-factor-app-methodology
+  hit: true
+  query: what is the 12-factor app methodology twelve factors
+  returned_slugs:
+  - resources/software-engineering/12-factor-app-methodology
+  - daily-notes/2026-05-29
+  - transcripts/claude-code/cs-keni-viz/2026-05-30-cdc77b9d-430
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-29-697dc3a1-9b2
+  - audit
+- category: software-eng
+  confidence: high
+  expected_slug: resources/devops-infrastructure/postmortem-writing
+  hit: true
+  query: how to write a postmortem blameless incident review
+  returned_slugs:
+  - resources/cognitive-science-biases/fundamental-attribution-error
+  - resources/devops-infrastructure/postmortem-writing
+  - resources/devops-infrastructure/postmortem-writing
+  - resources/devops-infrastructure/on-call-culture-and-incident-response
+  - resources/miscellaneous-high-value-topics/root-cause-analysis-5-whys-fishbone
+- category: software-eng
+  confidence: high
+  expected_slug: resources/devops-infrastructure/slis-slos-and-slas
+  hit: true
+  query: error budget SRE reliability burn rate SLO SLI
+  returned_slugs:
+  - resources/devops-infrastructure/slis-slos-and-slas
+  - resources/observability
+  - resources/devops-infrastructure/error-budgets
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-25a87088-e26
+  - resources/observability-case-studies
+- category: software-eng
+  confidence: high
+  expected_slug: resources/software-engineering/backward-compatibility-strategies
+  hit: true
+  query: backward compatibility REST API versioning semver migration
+  returned_slugs:
+  - resources/software-engineering/backward-compatibility-strategies
+  - resources/software-engineering/api-design-rest-principles
+  - resources/api-design
+  - resources/software-engineering/semantic-versioning
+  - transcripts/claude-code/cs-keni-obsidian-vault/2026-05-22-25a87088-e26
+- category: nlp
+  confidence: high
+  expected_slug: resources/language-linguistics/natural-language-processing-overview
+  hit: true
+  query: natural language processing overview pipeline for voice assistant
+  returned_slugs:
+  - resources/language-linguistics/natural-language-processing-overview
+  - resources/bobby/bobbys-voice-pipeline-architecture
+  - core-pipeline-py
+  - resources/bobby/bobbys-wake-word-and-audio-pipeline
+  - resources/ai-machine-learning/text-to-speech-models-elevenlabs-kokoro-tortoise
+run_date: '2026-06-03T02:38:19.127751'
+total: 25

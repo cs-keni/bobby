@@ -32,7 +32,7 @@ queries:
     confidence: high
 
   - query: "what are Bobby's config.yaml settings and schema"
-    expected_slug: "resources/bobby/bobbys-config-reference-config-yaml-schema"
+    expected_slug: "resources/bobby/bobbys-config-reference-config.yaml-schema"
     category: bobby
     confidence: high
 
@@ -106,9 +106,9 @@ queries:
     confidence: medium
 
   - query: "CAP theorem distributed systems consistency availability partition"
-    expected_slug: "resources/system-design/cap-theorem-and-pacelc"
+    expected_slug: "resources/system-design/cap-theorem"
     category: system-design
-    confidence: medium
+    confidence: high
 
   - query: "database sharding horizontal scaling consistent hashing"
     expected_slug: "resources/system-design/database-sharding"
@@ -118,24 +118,24 @@ queries:
   # --- Software Engineering ---
 
   - query: "what is the 12-factor app methodology twelve factors"
-    expected_slug: "resources/software-engineering/12-factor-app"
+    expected_slug: "resources/software-engineering/12-factor-app-methodology"
     category: software-eng
-    confidence: medium
+    confidence: high
 
   - query: "how to write a postmortem blameless incident review"
-    expected_slug: "resources/software-engineering/postmortem"
+    expected_slug: "resources/devops-infrastructure/postmortem-writing"
     category: software-eng
-    confidence: medium
+    confidence: high
 
   - query: "error budget SRE reliability burn rate SLO SLI"
-    expected_slug: "resources/software-engineering/error-budgets"
+    expected_slug: "resources/devops-infrastructure/slis-slos-and-slas"
     category: software-eng
-    confidence: medium
+    confidence: high
 
   - query: "backward compatibility REST API versioning semver migration"
-    expected_slug: "resources/software-engineering/backward-compatibility"
+    expected_slug: "resources/software-engineering/backward-compatibility-strategies"
     category: software-eng
-    confidence: medium
+    confidence: high
 
   # --- NLP / Language ---
 

@@ -3,6 +3,7 @@ Main Bobby pipeline: wake word → STT → Claude brain → TTS.
 This is the entry point for running Bobby on PC.
 """
 
+import os
 import re
 import subprocess
 import threading
@@ -102,11 +103,19 @@ def _query_gbrain(user_text: str) -> str:
         top_k = config.get("gbrain.query_top_k", 5)
         max_chars = config.get("gbrain.max_context_tokens", 4000) * 4
 
+        # Pass VOYAGE_API_KEY so gbrain uses hybrid vector+keyword search.
+        # Without it gbrain falls back to BM25-only, which misses semantic matches.
+        env = dict(os.environ)
+        voyage_key = config.get("gbrain.voyage_api_key", "")
+        if voyage_key:
+            env["VOYAGE_API_KEY"] = voyage_key
+
         proc = subprocess.run(
             [_GBRAIN_BIN, "query", user_text, "--limit", str(top_k), "--source-id", "__all__"],
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=8,
+            env=env,
         )
 
         if proc.returncode != 0 or not proc.stdout.strip():

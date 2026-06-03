@@ -1,6 +1,8 @@
 """Obsidian vault tools — Phase 11A: capture, read, search."""
+import subprocess
 import threading
 from datetime import datetime
+from pathlib import Path
 
 import httpx
 
@@ -79,6 +81,7 @@ def capture_to_obsidian(text: str, tags: list[str] | None = None, folder: str | 
         return _unreachable(e)
 
     _append_to_index(text, path)
+    _push_to_gbrain_async(content, f"inbox/{filename.replace('.md', '')}")
 
     return ToolResult(
         success=True,
@@ -212,6 +215,40 @@ def _do_build_index() -> None:
         content=index_content.encode(),
         timeout=10.0,
     ).raise_for_status()
+
+
+_GBRAIN_BIN = str(Path.home() / ".bun" / "bin" / "gbrain")
+
+
+def _push_to_gbrain_async(content: str, slug: str) -> None:
+    """Push a captured note to gbrain in a background thread. Non-blocking.
+
+    Failures are logged at DEBUG level and never surfaced to the user —
+    gbrain availability must not affect capture reliability.
+    """
+    if not config.get("gbrain.enabled", False):
+        return
+    threading.Thread(
+        target=_do_push_to_gbrain,
+        args=(content, slug),
+        daemon=True,
+        name="gbrain-push",
+    ).start()
+
+
+def _do_push_to_gbrain(content: str, slug: str) -> None:
+    try:
+        result = subprocess.run(
+            [_GBRAIN_BIN, "capture", "--stdin", "--slug", slug, "--type", "concept", "--quiet"],
+            input=content,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if result.returncode != 0:
+            log.debug(f"gbrain capture exit {result.returncode}: {result.stderr[:100]}")
+    except Exception as e:
+        log.debug(f"gbrain push skipped: {e}")
 
 
 def _append_to_index(text: str, path: str) -> None:

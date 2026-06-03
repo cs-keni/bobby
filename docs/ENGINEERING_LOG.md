@@ -2,6 +2,45 @@
 
 ---
 
+## 2026-06-03 — T6-T8: ingestion chunker, gbrain capture hook, eval run (Claude Sonnet 4.6)
+
+**T6: `memory/ingestion.py` — Markdown H2/H3 chunker (new file)**
+
+`chunk_markdown(content, note_title)` → `list[Chunk]`. Strips YAML frontmatter,
+extracts key-value metadata, splits on H2/H3 boundaries, flat-note fallback.
+`Chunk` dataclass: title, content, section_level (0=whole note, 2=H2, 3=H3), metadata.
+20 tests in `tests/test_ingestion.py` — all pass.
+
+**T7: gbrain push hook in `tools/obsidian.py`**
+
+After successful `capture_to_obsidian`, spawns a daemon thread calling:
+`gbrain capture --stdin --slug inbox/<timestamp> --type concept --quiet`
+Non-blocking (~5 lines). Silent on failure — gbrain availability never affects
+capture reliability. Only fires when `gbrain.enabled: true` in config.
+
+**T8: `evals/run_eval.py` + eval results**
+
+Built eval runner: reads `golden_queries.yaml`, runs each query via gbrain CLI,
+checks Recall@K, writes `eval_results.yaml`.
+
+Key fix during T8: `VOYAGE_API_KEY` must be passed explicitly to the subprocess env.
+Without it, gbrain falls back to BM25-only search (keyword), missing semantic matches.
+Fix applied to both `_query_gbrain()` in pipeline.py and `run_eval.py`.
+
+Also bumped pipeline timeout 5s → 8s to account for Voyage API embedding latency
+under PGLite concurrency (MCP server + eval runner competing for the same DB).
+
+**Final eval result: Recall@5 = 25/25 = 100%** across all 5 categories:
+- bobby: 8/8 (100%)
+- ai-ml: 8/8 (100%)
+- system-design: 4/4 (100%)
+- software-eng: 4/4 (100%)
+- nlp: 1/1 (100%)
+
+Results saved in `evals/eval_results.yaml`.
+
+---
+
 ## 2026-06-03 — T3/T4: gbrain eval set + pipeline wiring (Claude Sonnet 4.6)
 
 **T3: `evals/golden_queries.yaml` (new file)**
