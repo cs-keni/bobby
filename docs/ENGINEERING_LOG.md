@@ -46,6 +46,29 @@ Commit hash: `8d84f60`
 
 ---
 
+## 2026-06-03 — Phase 11B/C test coverage + PHASES.md success gate (Claude Sonnet 4.6)
+
+Added 7 missing unit tests for `ensure_daily_note` and `load_profile_context` (both landed in 8d84f60 without tests).
+
+**`ensure_daily_note` tests (3)**
+- Creates today's note at `Areas/Daily/YYYY-MM-DD.md` when GET returns 404
+- Skips PUT when note already exists (GET 200)
+- Silent on `ConnectError` — no raise
+
+**`load_profile_context` tests (4)**
+- Returns `""` when `personality_profile_enabled: false`
+- Returns profile markdown when BOBBY_PROFILE.md exists (200)
+- Returns `""` when profile doesn't exist yet (404)
+- Caches result: second call makes no HTTP request (`call_count == 1`)
+
+Test baseline: 132 passed, 1 skipped (up from 125 after 8d84f60).
+
+Updated PHASES.md Phase B success gate: *code ready; awaiting daily use observation by Kenny*.
+
+Commit hash: TBD
+
+---
+
 ## 2026-06-03 — Setup artifacts commit (Claude Sonnet 4.6)
 
 Committed leftover gbrain setup files: `.gitignore` (add topics-for-bobby.txt exclusion),

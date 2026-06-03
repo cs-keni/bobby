@@ -426,7 +426,7 @@ CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`
 - [x] **CP2:** `ensure_daily_note()` — creates `Areas/Daily/YYYY-MM-DD.md` on startup (daemon thread, silent on failure)
 - [ ] **Auto-session-capture:** End-of-session summary appended to daily note automatically
 - [ ] **Morning brief:** "Good morning Bobby" → synthesizes inbox + recent captures
-- [ ] **Success gate:** Bobby mentions a relevant note unprompted at least once per day
+- [ ] **Success gate:** Bobby mentions a relevant note unprompted at least once per day — *code ready (gbrain RAG wired); awaiting daily use observation by Kenny*
 
 > **Future: Vector RAG upgrade (~300+ notes threshold)**
 >

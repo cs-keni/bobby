@@ -281,6 +281,120 @@ def test_build_index_h3_sections_appear():
     assert "Sub B" in written
 
 
+# ── ensure_daily_note ────────────────────────────────────────────────────────
+
+
+def test_ensure_daily_note_creates_when_missing(monkeypatch):
+    """Worker creates today's note when it doesn't exist yet."""
+    from datetime import datetime
+    import core.config as cfg
+    original_get = cfg.get
+    monkeypatch.setattr(cfg, "get", lambda key, default=None: "Areas/Daily" if key == "obsidian.daily_folder" else original_get(key, default))
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    with patch("httpx.get", return_value=_mock_response(404)), \
+         patch("httpx.put", return_value=_mock_response(200)) as mock_put:
+        from tools.obsidian import _ensure_daily_note_worker
+        _ensure_daily_note_worker()
+
+    mock_put.assert_called_once()
+    url = mock_put.call_args.args[0]
+    assert f"Areas/Daily/{today}.md" in url
+
+
+def test_ensure_daily_note_skips_when_exists():
+    """Worker skips creation when the daily note already exists."""
+    with patch("httpx.get", return_value=_mock_response(200, text="# Existing")), \
+         patch("httpx.put") as mock_put:
+        from tools.obsidian import _ensure_daily_note_worker
+        _ensure_daily_note_worker()
+
+    mock_put.assert_not_called()
+
+
+def test_ensure_daily_note_silent_on_failure():
+    """Worker swallows exceptions without crashing."""
+    import httpx as httpx_mod
+    with patch("httpx.get", side_effect=httpx_mod.ConnectError("down")):
+        from tools.obsidian import _ensure_daily_note_worker
+        _ensure_daily_note_worker()  # must not raise
+
+
+# ── load_profile_context ─────────────────────────────────────────────────────
+
+
+def _reset_profile_cache(monkeypatch):
+    import tools.profile as prof
+    monkeypatch.setattr(prof, "_PROFILE_CACHE", "")
+    monkeypatch.setattr(prof, "_CACHE_LOADED", False)
+
+
+def test_load_profile_context_disabled_returns_empty(monkeypatch):
+    """Returns '' when personality_profile_enabled is False."""
+    _reset_profile_cache(monkeypatch)
+    import core.config as cfg
+    original_get = cfg.get
+    monkeypatch.setattr(cfg, "get", lambda key, default=None: False if key == "personality_profile_enabled" else original_get(key, default))
+
+    from tools.profile import load_profile_context
+    assert load_profile_context() == ""
+
+
+def test_load_profile_context_returns_content(monkeypatch):
+    """Returns profile markdown when BOBBY_PROFILE.md exists in vault."""
+    _reset_profile_cache(monkeypatch)
+    import core.config as cfg
+    original_get = cfg.get
+
+    def patched_get(key, default=None):
+        if key == "personality_profile_enabled":
+            return True
+        if key == "obsidian.profile_file":
+            return "BOBBY_PROFILE.md"
+        return original_get(key, default)
+
+    monkeypatch.setattr(cfg, "get", patched_get)
+    profile_content = "# Bobby Personality Profile\n\nValues: focus, clarity."
+
+    with patch("httpx.get", return_value=_mock_response(200, text=profile_content)):
+        from tools.profile import load_profile_context
+        result = load_profile_context()
+
+    assert result == profile_content
+
+
+def test_load_profile_context_returns_empty_on_missing(monkeypatch):
+    """Returns '' when BOBBY_PROFILE.md doesn't exist yet (404)."""
+    _reset_profile_cache(monkeypatch)
+    import core.config as cfg
+    original_get = cfg.get
+    monkeypatch.setattr(cfg, "get", lambda key, default=None: True if key == "personality_profile_enabled" else original_get(key, default))
+
+    with patch("httpx.get", return_value=_mock_response(404)):
+        from tools.profile import load_profile_context
+        result = load_profile_context()
+
+    assert result == ""
+
+
+def test_load_profile_context_caches_result(monkeypatch):
+    """Second call returns cached value without a second HTTP request."""
+    _reset_profile_cache(monkeypatch)
+    import core.config as cfg
+    original_get = cfg.get
+    monkeypatch.setattr(cfg, "get", lambda key, default=None: True if key == "personality_profile_enabled" else original_get(key, default))
+
+    profile_content = "# Profile\n\nCached content."
+    with patch("httpx.get", return_value=_mock_response(200, text=profile_content)) as mock_get:
+        from tools.profile import load_profile_context
+        first = load_profile_context()
+        second = load_profile_context()
+
+    assert first == profile_content
+    assert second == profile_content
+    assert mock_get.call_count == 1
+
+
 # ── core/config.py dotted-path accessor ─────────────────────────────────────
 
 
