@@ -422,8 +422,8 @@ CEO plan: [`~/.gstack/projects/cs-keni-bobby/ceo-plans/20260519-second-brain.md`
   - [x] Injected as system role message (trusted — NOT via `<data>` XML tags)
   - [x] `MAX_INDEX_TOKENS = 3000` guard before injection
 - [x] Proactive surfacing instruction added to system prompt
-- [ ] `build_vault_index()` full implementation: list titles + first 3 lines, write `VAULT_INDEX.md`
-- [ ] **CP2:** Bobby creates/opens today's daily note on startup (all captures default-link to it)
+- [x] `build_vault_index()` full implementation: concurrent fetches, `chunk_markdown()` section previews, `VAULT_INDEX.md` (3 new tests)
+- [x] **CP2:** `ensure_daily_note()` — creates `Areas/Daily/YYYY-MM-DD.md` on startup (daemon thread, silent on failure)
 - [ ] **Auto-session-capture:** End-of-session summary appended to daily note automatically
 - [ ] **Morning brief:** "Good morning Bobby" → synthesizes inbox + recent captures
 - [ ] **Success gate:** Bobby mentions a relevant note unprompted at least once per day
@@ -478,10 +478,16 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 
 ### Phase C — Personality Profile
 
-- [ ] `build_personality_profile()`: batched note reads + Claude synthesis → writes `BOBBY_PROFILE.md`
-- [ ] `update_personality_profile()`: last-30-days incremental refresh (manual trigger only)
-- [ ] `BOBBY_PROFILE.md` injected into system prompt (~1,000 token budget, separate section)
+- [x] `tools/profile.py`: `build_personality_profile()` + `update_personality_profile()` scaffold
+  - Full build: gbrain search for opinion/belief/decision notes → Claude Sonnet synthesis → `BOBBY_PROFILE.md`
+  - Incremental: last-30-days inbox captures + existing profile → Claude update
+  - Gated by `personality_profile_enabled: true` in config (default: false)
+  - **DO NOT run automatically** — Kenny triggers manually via voice or script
+- [x] `core/brain.py`: `profile_context` param → third system block `[PERSONALITY PROFILE]` (~1,000 tokens)
+- [x] `tools/profile.py`: `load_profile_context()` — reads `BOBBY_PROFILE.md`, cached per process
+- [x] `core/pipeline.py`: `load_profile_context()` called in `_run_command()` and cache-warmed at `main()` startup
 - [ ] **CP1:** Proactive capture suggestions mid-conversation ("Want me to save that to Obsidian?")
+- [ ] **Trigger:** First run: `python -c "from tools.profile import build_personality_profile; build_personality_profile(); import time; time.sleep(120)"`
 - [ ] **Success gate:** "Bobby, how would I think about X?" sounds like you. Profile has ≥10 documented opinions with note citations.
 
 ---
@@ -499,7 +505,7 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 - [ ] Phase 8 — Routines & Proactive
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver
-- [~] Phase 11 — Second Brain (Obsidian) — Phase A shipped (fd1b2b1); success gate pending (use daily for 1 week); Phase B/C remaining
+- [~] Phase 11 — Second Brain (Obsidian) — Phase A shipped (fd1b2b1); Phase B-RAG shipped (Recall@5 100%); Phase B remaining (auto-session-capture, morning brief); Phase C scaffolded (needs Kenny to trigger first profile build + E2E test)
 
 ---
 

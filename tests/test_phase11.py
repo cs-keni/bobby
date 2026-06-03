@@ -217,6 +217,70 @@ def test_think_with_vault_context_uses_block_system():
         assert "VAULT CONTEXT" in call_kwargs["system"][1]["text"]
 
 
+# ── _do_build_index (full implementation) ───────────────────────────────────
+
+
+def test_build_index_includes_section_titles():
+    """Notes with H2/H3 sections get per-section preview lines in the index."""
+    sectioned = "# Concept Note\n\n## Section A\nContent A here.\n\n## Section B\nContent B here."
+    flat = "# Flat Note\n\nJust plain text with no headers."
+
+    def _fake_get(url, **kwargs):
+        if url.endswith("/vault/"):
+            return _mock_response(200, json_data={"files": ["notes/concept.md", "notes/flat.md"]})
+        if "concept.md" in url:
+            return _mock_response(200, text=sectioned)
+        if "flat.md" in url:
+            return _mock_response(200, text=flat)
+        return _mock_response(404)
+
+    with patch("httpx.get", side_effect=_fake_get), \
+         patch("httpx.put", return_value=_mock_response(200)) as mock_put:
+        from tools.obsidian import _do_build_index
+        _do_build_index()
+
+    mock_put.assert_called_once()
+    written = mock_put.call_args.kwargs["content"].decode()
+    assert "notes/concept.md" in written
+    assert "Section A" in written
+    assert "Section B" in written
+    assert "notes/flat.md" in written
+    assert "Just plain text" in written
+
+
+def test_build_index_empty_vault_writes_gracefully():
+    with patch("httpx.get", return_value=_mock_response(200, json_data={"files": []})), \
+         patch("httpx.put", return_value=_mock_response(200)) as mock_put:
+        from tools.obsidian import _do_build_index
+        _do_build_index()
+
+    mock_put.assert_called_once()
+    written = mock_put.call_args.kwargs["content"].decode()
+    assert "Notes: 0" in written
+    assert "Sections: 0" in written
+    assert "## Recent Captures" in written
+
+
+def test_build_index_h3_sections_appear():
+    """H3 sub-sections are indented with ### prefix in the index."""
+    deep = "# Deep Note\n\n## Top Section\nIntro.\n\n### Sub A\nDetail A.\n\n### Sub B\nDetail B."
+
+    def _fake_get(url, **kwargs):
+        if url.endswith("/vault/"):
+            return _mock_response(200, json_data={"files": ["notes/deep.md"]})
+        return _mock_response(200, text=deep)
+
+    with patch("httpx.get", side_effect=_fake_get), \
+         patch("httpx.put", return_value=_mock_response(200)) as mock_put:
+        from tools.obsidian import _do_build_index
+        _do_build_index()
+
+    written = mock_put.call_args.kwargs["content"].decode()
+    assert "Top Section" in written
+    assert "Sub A" in written
+    assert "Sub B" in written
+
+
 # ── core/config.py dotted-path accessor ─────────────────────────────────────
 
 

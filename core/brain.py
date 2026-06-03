@@ -61,6 +61,7 @@ def think(
     conversation_history: list[dict[str, Any]],
     memory_context: str = "",
     vault_context: str = "",
+    profile_context: str = "",
     use_complex_model: bool = False,
 ) -> tuple[str, list[dict[str, Any]]]:
     """
@@ -84,6 +85,10 @@ def think(
         max_chars = config.get("gbrain.max_context_tokens", 4000) * 4
         truncated = vault_context[:max_chars]
         system.append({"type": "text", "text": f"[VAULT CONTEXT]\n{truncated}\n[END VAULT CONTEXT]"})
+    if profile_context:
+        profile_chars = 4000  # ~1,000 token budget
+        truncated_profile = profile_context[:profile_chars]
+        system.append({"type": "text", "text": f"[PERSONALITY PROFILE]\n{truncated_profile}\n[END PERSONALITY PROFILE]"})
 
     log.debug(f"Sending to Claude ({model}): {user_message[:80]}...")
 

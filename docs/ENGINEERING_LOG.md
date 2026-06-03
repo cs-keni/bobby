@@ -2,6 +2,50 @@
 
 ---
 
+## 2026-06-03 — Phase 11B remaining + Phase 11C scaffold (Claude Sonnet 4.6)
+
+**`build_vault_index()` full implementation (`tools/obsidian.py`)**
+
+Replaced 100-note-capped stub with full implementation:
+- `ThreadPoolExecutor(max_workers=10)` for concurrent note fetches — no 100-note cap
+- `chunk_markdown()` from `memory/ingestion.py` extracts H2/H3 sections per note
+- Index format: `- \`path\` — intro...` with `  ## Section — preview` sub-lines for sectioned notes
+- Header: `Notes: N | Sections: M` for at-a-glance vault metrics
+- 3 new tests in `tests/test_phase11.py` — total: 125 passing, 1 skipped
+
+**`ensure_daily_note()` — startup daily note creation (`tools/obsidian.py`)**
+
+New function: creates `Areas/Daily/YYYY-MM-DD.md` on Bobby startup if it doesn't exist.
+- Runs in daemon thread at `main()` startup (non-blocking, ~50ms)
+- Template: frontmatter + ## Morning / ## Notes / ## Evening sections
+- Configurable via `obsidian.daily_folder` (default: `Areas/Daily`)
+- Silent on failure — Obsidian may not be open at startup
+
+**Phase 11C personality profile scaffold (`tools/profile.py` — new file)**
+
+New module `tools/profile.py`:
+- `build_personality_profile()`: full build — gbrain search for opinion/belief/decision/mental-model notes, reads top-50, feeds to Claude Sonnet, writes `BOBBY_PROFILE.md`
+- `update_personality_profile()`: incremental — inbox notes from last 30 days + existing profile → Claude update
+- `load_profile_context()`: reads `BOBBY_PROFILE.md` from vault, cached per process (one Obsidian fetch)
+- Both builders run in daemon threads, silent on failure
+- Gated by `personality_profile_enabled: true` in config (default: false)
+- **DO NOT trigger automatically** — Kenny runs manually when ready for E2E test
+
+**`core/brain.py`: `profile_context` param**
+
+Added `profile_context: str = ""` to `think()`. When non-empty, appended as a third system block:
+`[PERSONALITY PROFILE]\n{content}\n[END PERSONALITY PROFILE]` (~1,000-token budget, 4000-char cap).
+Safe append pattern established in T5 (system is always `list[dict]`) makes this a one-liner.
+
+**`core/pipeline.py`: plumbing**
+
+`_run_command()` now calls `load_profile_context()` and passes it to both `think()` calls.
+`main()` pre-warms the cache at startup (returns "" immediately when feature is disabled).
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-03 — Setup artifacts commit (Claude Sonnet 4.6)
 
 Committed leftover gbrain setup files: `.gitignore` (add topics-for-bobby.txt exclusion),

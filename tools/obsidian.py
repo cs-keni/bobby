@@ -185,27 +185,53 @@ def _build_index_worker() -> None:
 
 
 def _do_build_index() -> None:
-    """List all notes, read first 3 lines of each, write VAULT_INDEX.md."""
+    """Fetch all vault notes concurrently, extract sections, write VAULT_INDEX.md."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    from memory.ingestion import chunk_markdown
+
     response = httpx.get(f"{_api_base()}/vault/", headers=_headers(), timeout=10.0)
     response.raise_for_status()
-    files = [f for f in response.json().get("files", []) if f.endswith(".md") and "VAULT_INDEX" not in f]
+    files = sorted(
+        f for f in response.json().get("files", [])
+        if f.endswith(".md") and "VAULT_INDEX" not in f
+    )
 
-    previews: list[str] = []
-    for path in files[:100]:  # cap at 100 notes for initial index
+    def _fetch(path: str) -> tuple[str, list]:
         try:
             r = httpx.get(f"{_api_base()}/vault/{path}", headers=_headers(), timeout=5.0)
             if r.status_code == 200:
-                lines = [l for l in r.text.splitlines() if l.strip() and not l.startswith("---")][:3]
-                preview = " ".join(lines)[:120]
-                previews.append(f"- `{path}` — {preview}")
+                return path, chunk_markdown(r.text, Path(path).stem)
         except Exception:
-            previews.append(f"- `{path}`")
+            pass
+        return path, []
 
+    fetched: dict[str, list] = {}
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        for path, chunks in pool.map(_fetch, files):
+            fetched[path] = chunks
+
+    preview_lines: list[str] = []
+    for path in sorted(fetched):
+        chunks = fetched[path]
+        if not chunks:
+            preview_lines.append(f"- `{path}`")
+            continue
+        intro = chunks[0].content[:120].replace("\n", " ")
+        preview_lines.append(f"- `{path}` — {intro}")
+        for chunk in chunks[1:]:
+            section_preview = chunk.content[:80].replace("\n", " ")
+            prefix = "  ##" if chunk.section_level == 2 else "   ###"
+            preview_lines.append(f"{prefix} {chunk.title} — {section_preview}")
+
+    total_sections = sum(len(c) for c in fetched.values())
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     index_content = (
-        f"# Bobby's Vault Index\nLast updated: {now} | Notes: {len(files)}\n\n"
-        f"## Notes\n" + "\n".join(previews) + "\n\n"
-        f"## Recent Captures\n"
+        f"# Bobby's Vault Index\n"
+        f"Last updated: {now} | Notes: {len(files)} | Sections: {total_sections}\n\n"
+        f"## Notes\n\n"
+        + "\n".join(preview_lines)
+        + "\n\n## Recent Captures\n"
     )
 
     index_path = config.get("obsidian.index_file", "VAULT_INDEX.md")
@@ -215,6 +241,40 @@ def _do_build_index() -> None:
         content=index_content.encode(),
         timeout=10.0,
     ).raise_for_status()
+
+
+def ensure_daily_note() -> None:
+    """Create today's daily note if it doesn't already exist. Non-blocking daemon thread."""
+    if not _enabled():
+        return
+    threading.Thread(target=_ensure_daily_note_worker, daemon=True, name="daily-note").start()
+
+
+def _ensure_daily_note_worker() -> None:
+    try:
+        daily_folder = config.get("obsidian.daily_folder", "Areas/Daily")
+        today = datetime.now().strftime("%Y-%m-%d")
+        path = f"{daily_folder}/{today}.md"
+
+        r = httpx.get(f"{_api_base()}/vault/{path}", headers=_headers(), timeout=5.0)
+        if r.status_code == 200:
+            log.debug(f"Daily note already exists: {path}")
+            return
+
+        content = (
+            f"---\ncreated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"type: daily\ntags:\n  - daily\n---\n\n"
+            f"# {today}\n\n## Morning\n\n## Notes\n\n## Evening\n"
+        )
+        httpx.put(
+            f"{_api_base()}/vault/{path}",
+            headers={**_headers(), "Content-Type": "text/markdown"},
+            content=content.encode(),
+            timeout=5.0,
+        ).raise_for_status()
+        log.info(f"Created daily note: {path}")
+    except Exception as e:
+        log.debug(f"Could not create daily note: {e}")
 
 
 _GBRAIN_BIN = str(Path.home() / ".bun" / "bin" / "gbrain")

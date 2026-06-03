@@ -178,8 +178,10 @@ def _run_command(text: str, via_api: bool = False) -> str:
     use_complex = any(t in text.lower() for t in complex_triggers)
 
     from memory.db import get_memory_context, save_turn
+    from tools.profile import load_profile_context
     memory_context = get_memory_context()
     vault_context = _query_gbrain(text)
+    profile_context = load_profile_context()
 
     response_text, tool_calls = think(
         user_message=text,
@@ -187,6 +189,7 @@ def _run_command(text: str, via_api: bool = False) -> str:
         conversation_history=history,
         memory_context=memory_context,
         vault_context=vault_context,
+        profile_context=profile_context,
         use_complex_model=use_complex,
     )
 
@@ -236,6 +239,7 @@ def _run_command(text: str, via_api: bool = False) -> str:
             conversation_history=history,
             memory_context="",  # already injected in first turn; don't repeat
             vault_context=vault_context,
+            profile_context=profile_context,
             use_complex_model=use_complex,
         )
 
@@ -351,6 +355,10 @@ def run() -> None:
 
 
 def main() -> None:
+    from tools.obsidian import ensure_daily_note
+    from tools.profile import load_profile_context
+    ensure_daily_note()
+    load_profile_context()  # warm cache; returns "" if feature is disabled
     if config.get("server_enabled", False):
         _start_server_thread()
     run()
