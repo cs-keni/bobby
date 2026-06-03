@@ -271,6 +271,9 @@ def _run_command(text: str, via_api: bool = False) -> str:
     return response_text or ""
 
 
+_SPEAK_TIMEOUT = 35  # seconds — hard cap so a hung TTS never freezes the main loop
+
+
 def _process_command(text: str) -> None:
     """Voice pipeline handler: run command and speak the response locally."""
     with _processing_lock:
@@ -278,7 +281,11 @@ def _process_command(text: str) -> None:
     if response_text:
         _speaking.set()
         try:
-            speak(response_text)
+            t = threading.Thread(target=speak, args=(response_text,), daemon=True, name="tts")
+            t.start()
+            t.join(timeout=_SPEAK_TIMEOUT)
+            if t.is_alive():
+                log.warning(f"speak() still running after {_SPEAK_TIMEOUT}s — continuing (audio may be cut short)")
         finally:
             _speaking.clear()
 

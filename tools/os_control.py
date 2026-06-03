@@ -371,7 +371,7 @@ def set_volume(level: int | None = None, mute: bool | None = None) -> ToolResult
         else:
             ps_cmds = [_PS_AUDIO_CS]
             if level is not None:
-                ps_cmds.append(f"[AudioCtrl]::SetLevel({max(0.0, min(1.0, level / 100.0))}f)")
+                ps_cmds.append(f"[AudioCtrl]::SetLevel([float]{max(0.0, min(1.0, level / 100.0))})")
             if mute is not None:
                 ps_cmds.append(f"[AudioCtrl]::SetMuted({'$true' if mute else '$false'})")
             rc, out = _ps_run("\n".join(ps_cmds))
