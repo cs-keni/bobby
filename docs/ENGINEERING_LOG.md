@@ -65,7 +65,7 @@ Test baseline: 132 passed, 1 skipped (up from 125 after 8d84f60).
 
 Updated PHASES.md Phase B success gate: *code ready; awaiting daily use observation by Kenny*.
 
-Commit hash: TBD
+Commit hash: `893fcd5`
 
 ---
 
