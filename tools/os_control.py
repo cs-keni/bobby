@@ -298,11 +298,11 @@ public static class AudioCtrl {
 def _ps_run(cmd: str) -> tuple[int, str]:
     exe = "powershell.exe" if sys.platform != "win32" else "powershell"
     r = subprocess.run(
-        [exe, "-NoProfile", "-NonInteractive", "-Command", cmd],
+        [exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", cmd],
         capture_output=True, text=True, timeout=15,
     )
-    if r.returncode != 0 and r.stderr.strip():
-        log.debug(f"PowerShell stderr: {r.stderr.strip()[:300]}")
+    if r.returncode != 0:
+        log.warning(f"PowerShell failed (rc={r.returncode}): {(r.stderr or r.stdout).strip()[:300]}")
     return r.returncode, r.stdout.strip()
 
 

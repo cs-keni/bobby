@@ -64,7 +64,12 @@ def _play_mp3(mp3_bytes: bytes) -> None:
         ["ffplay", "-nodisp", "-autoexit", "-f", "mp3", "-i", "pipe:0", "-loglevel", "quiet"],
         stdin=subprocess.PIPE,
     )
-    proc.communicate(input=mp3_bytes)
+    try:
+        proc.communicate(input=mp3_bytes, timeout=20)
+    except subprocess.TimeoutExpired:
+        log.warning("ffplay timed out — killing (PulseAudio may have dropped)")
+        proc.kill()
+        proc.communicate()
 
 
 def _try_elevenlabs(text: str) -> bool:
@@ -126,6 +131,11 @@ def synthesize(text: str) -> bytes | None:
 
 
 def _speak_fallback(text: str) -> None:
+    import sys
+    if sys.platform != "win32":
+        # pyttsx3 has no audio output in WSL2 and hangs on runAndWait()
+        log.warning("pyttsx3 fallback skipped (WSL2 — no audio backend)")
+        return
     engine = _get_fallback()
     engine.say(text)
     engine.runAndWait()
