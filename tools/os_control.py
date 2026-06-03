@@ -283,7 +283,8 @@ public static class AudioCtrl {
     static IAudioEndpointVolume GetAEV() {
         var en = (IMMDeviceEnumerator)new MMDevEnum();
         IMMDevice dev; en.GetDefaultAudioEndpoint(0, 1, out dev);
-        object obj; dev.Activate(ref AEV_IID, 23, IntPtr.Zero, out obj);
+        var iid = AEV_IID;
+        object obj; dev.Activate(ref iid, 23, IntPtr.Zero, out obj);
         return (IAudioEndpointVolume)obj;
     }
     public static int GetLevel() { var v=GetAEV(); float f; v.GetMasterVolumeLevelScalar(out f); return (int)Math.Round(f*100); }
