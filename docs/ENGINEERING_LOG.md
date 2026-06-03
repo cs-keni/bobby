@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-06-03 — Wake word + repo cleanup (Claude Sonnet 4.6)
+
+Trained custom "hey bobby" wake word via OpenWakeWord Colab (5k examples, 20k steps, T4 GPU).
+Model: `models/hey_bobby.onnx` — verified loads correctly, model key = `hey_bobby`.
+Activated in `config.yaml` via `wake_word_path: "models/hey_bobby.onnx"`.
+
+Repo cleanup:
+- Deleted `topics-for-bobby.txt` (vault reference list, gitignored anyway)
+- Moved `TODOS.md` → `docs/TODOS.md`
+
+Commit hash: TBD
+
+---
+
 ## 2026-06-03 — Phase 11B remaining + Phase 11C scaffold (Claude Sonnet 4.6)
 
 **`build_vault_index()` full implementation (`tools/obsidian.py`)**
