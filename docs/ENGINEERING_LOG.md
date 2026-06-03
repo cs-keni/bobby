@@ -42,7 +42,7 @@ Safe append pattern established in T5 (system is always `list[dict]`) makes this
 `_run_command()` now calls `load_profile_context()` and passes it to both `think()` calls.
 `main()` pre-warms the cache at startup (returns "" immediately when feature is disabled).
 
-Commit hash: (pending)
+Commit hash: `8d84f60`
 
 ---
 
