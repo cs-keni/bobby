@@ -33,7 +33,7 @@ Discord config.yaml updated with real server/channel IDs (BUBBLE BUTT BOTTOM BOI
 - **Per-app audio via PowerShell WASAPI, not pycaw**: pycaw is `sys_platform == 'win32'` only; won't load in WSL. PowerShell approach is consistent with existing system volume code and avoids dual-path logic.
 - **Spotify playlist search: user playlists first**: The user said "play my Vietnamese playlist" — searching their own saved playlists before the catalog respects that intent. Catalog fallback covers cases where the playlist isn't saved yet.
 
-Commit hash: TBD
+Commit hash: 920ef7a
 
 ---
 
