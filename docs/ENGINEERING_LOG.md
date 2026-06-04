@@ -2,33 +2,89 @@
 
 ---
 
-## 2026-06-03 — Post-E2E bug fixes (Claude Sonnet 4.6)
+## 2026-06-03 — E2E test session + full RCA (Claude Sonnet 4.6)
 
-Four bugs found during first real daily-driver test session.
+First real daily-driver test. Volume now works. All blocking bugs resolved.
+6 bugs found and fixed across 4 commits (3785102 → d4a8543).
 
-**Bug 1 (critical): Tool results never shown after `recall_facts`**
-`pipeline.py:226` had `if tool_calls and not response_text:` — when Claude returned
-both an interim "I'll look that up" text AND tool_calls simultaneously, the condition
-was False and the second `think()` was skipped. Tool results were silently discarded.
-Fix: changed to `if tool_calls:` — always run second think() when tools were called.
+---
 
-**Bug 2: Markdown read aloud by TTS**
-`tts.py`: added `_strip_markdown()` called inside `speak()` before ElevenLabs.
-Strips `**bold**`, `*italic*`, `` `code` ``, headers, bullets, blank lines.
+### Bug 1 — Tool results silently discarded (critical)
+**Where:** `core/pipeline.py:226`
+**Root cause:** Condition `if tool_calls and not response_text:` controlled whether
+the second `think()` call (which presents tool results to the user) ran. Claude
+sometimes returns BOTH an interim spoken text ("I'll pull up what I have stored")
+AND tool_calls in the same response. When it did, `response_text` was non-empty →
+condition was `False` → second `think()` skipped → tool results thrown away. User
+asked "what do you know about me?", Bobby said "I'll pull up..." and then went silent
+for 2 minutes.
+**Fix:** `if tool_calls:` — always run the second think() when tools were called.
+Second think() response overwrites the interim text, which is the correct behavior.
 
-**Bug 3: Bobby didn't know the current time/date**
-`brain.py`: inject `datetime.now()` as a formatted string appended to SYSTEM_PROMPT
-on every `think()` call. Bobby now answers "what time is it?" correctly.
+---
 
-**Bug 4: Volume PowerShell stderr not logged**
-`os_control.py`: `_ps_run()` now logs PowerShell stderr at DEBUG level on non-zero exit.
-Will surface the actual error next time "set volume" fails.
+### Bug 2 — Markdown read aloud by ElevenLabs
+**Where:** `core/tts.py` — `speak()` passed raw Claude output to ElevenLabs
+**Root cause:** Claude formats responses with markdown (`**51**`, bullets, headers).
+ElevenLabs reads these as literal symbols: "asterisk asterisk 51 asterisk asterisk".
+**Fix:** Added `_strip_markdown()` applied inside `speak()` before the API call.
+Strips bold, italic, code, headers, bullets, horizontal rules, collapses blank lines.
 
-**Optimization: Whisper preloaded at startup**
-`pipeline.py main()`: `_load_model()` called in a daemon thread at startup so the first
-voice command doesn't pay the 3s Whisper cold-start penalty.
+---
 
-Commit hash: `3785102`
+### Bug 3 — Bobby didn't know the current time
+**Where:** `core/brain.py` — `SYSTEM_PROMPT` static constant
+**Root cause:** The system prompt is a fixed string with no dynamic context.
+Claude has no awareness of the current date or time unless told.
+**Fix:** `datetime.now()` formatted and appended to SYSTEM_PROMPT on every `think()` call.
+
+---
+
+### Bug 4 — Volume: C# float literal `0.1f` invalid in PowerShell
+**Where:** `tools/os_control.py` — `set_volume()` building the PowerShell command
+**Root cause:** `f"[AudioCtrl]::SetLevel({level / 100.0}f)"` produced
+`[AudioCtrl]::SetLevel(0.1f)`. The `f` suffix is C# syntax for float literals —
+PowerShell does not understand it and threw "Unexpected token '0.1f'".
+**Fix:** `[AudioCtrl]::SetLevel([float]{level / 100.0})` — uses PowerShell's own
+cast syntax instead of a C# literal.
+
+---
+
+### Bug 5 — Volume: C# `static readonly` field passed by `ref`
+**Where:** `tools/os_control.py` — `_PS_AUDIO_CS` inline C#, `GetAEV()` method
+**Root cause:** `dev.Activate(ref AEV_IID, ...)` passed a `static readonly Guid`
+directly by `ref`. The C# spec prohibits this outside a static constructor (the
+field is stored in a CPU register, not a memory location that `ref` can point to).
+Older .NET versions enforce this strictly.
+**Fix:** `var iid = AEV_IID; dev.Activate(ref iid, ...)` — copy to a local
+mutable variable before passing by ref.
+
+---
+
+### Bug 6 — TTS hang froze Bobby's main loop (up to 16 minutes)
+**Where:** `core/tts.py` `_play_mp3()` and `_speak_fallback()`;
+`core/pipeline.py` `_process_command()`
+**Root cause (three layers):**
+1. `_play_mp3()` called `proc.communicate()` with no timeout. If PulseAudio
+   dropped mid-session, ffplay hung indefinitely — blocking the call.
+2. The pyttsx3 fallback calls `engine.runAndWait()` which hangs in WSL2
+   because pyttsx3 has no audio backend in that environment.
+3. `speak()` was called synchronously in the main `run()` loop. Any hang in
+   TTS completely froze Bobby — wake words were detected but never processed
+   because `_listening.wait()` was never reached.
+**Fix (three layers):**
+1. `proc.communicate(timeout=20)` + `proc.kill()` on `TimeoutExpired`.
+2. `_speak_fallback()` skips immediately on WSL2 (`sys.platform != "win32"`).
+3. `speak()` runs in a daemon thread with `t.join(timeout=35)` — main loop
+   is capped at 35s wait regardless of what ElevenLabs or ffplay does.
+
+---
+
+### Optimization — Whisper preloaded at startup
+`pipeline.py main()`: `_load_model()` called in a daemon thread at startup to
+eliminate the 3s cold-start penalty on the first voice command after restart.
+
+Commits: `3785102`, `87a26a7`, `fd82121`, `d4a8543`
 
 ---
 
