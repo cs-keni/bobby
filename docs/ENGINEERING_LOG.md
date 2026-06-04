@@ -2,6 +2,49 @@
 
 ---
 
+## 2026-06-04 — Phase 12 T1–T5: WebSocket event bus + pipeline wiring (Claude Sonnet 4.6)
+
+Shipped the WS backend layer that Tauri depends on. Test count: 236 → 259 (23 new tests, 0 regressions).
+
+### T1 — `core/events.py` (new)
+- Thread-safe event bus: `broadcast_state(state, text, transcript)` callable from any pipeline thread
+- `subscribe()` / `unsubscribe()` for WS clients; each gets an `asyncio.Queue(maxsize=100)`
+- `set_event_loop(loop)` stores the uvicorn event loop for `call_soon_threadsafe` delivery
+- `get_current_state()` returns snapshot for on-connect delivery (late-joining clients aren't blank)
+- `QueueFull` on a maxed-out slow client is swallowed, not raised
+
+### T2 — `core/pipeline.py` wiring (5 call sites)
+- `_on_wake()` → `broadcast_state("listening")` (before `_listening.set()`)
+- `_run_command()` start → `broadcast_state("thinking")` (after empty-text guard)
+- `_process_command()` before `speak()` → `broadcast_state("speaking", text=response_text)`
+- `_process_command()` `finally` block → `broadcast_state("idle")`
+- `process_text_command()` API path: same speaking+idle transitions after `_run_command()` returns
+- Import added at module top: `from core.events import broadcast_state` (no circular import risk — `events.py` has no pipeline dependency)
+
+### T3 — `server/ws.py` (new) + `server/main.py` mount
+- `GET /ws?token=<token>` WebSocket endpoint; auth via query param (CORS doesn't protect WS)
+- Uses `verify_token` logic inline (compare against `config.get("server_token")`)
+- Sends state snapshot immediately on connect; then streams queued events until disconnect
+- Cleanup: `unsubscribe(q)` in `finally` block — dead client never leaks a queue reference
+
+### T4 (manual) — browser verify pending
+- Run: `new WebSocket("ws://localhost:8765/ws?token=...")` in browser console
+- Should receive `{"state":"idle"}` snapshot, then live events on wake word
+
+### T5 — Tests: 23 new in `tests/test_server_ws.py` + `tests/test_pipeline_broadcast.py`
+- Event bus: subscribe/unsubscribe, snapshot copy safety, broadcast delivery to 1/N clients, full-queue resilience
+- WS endpoint: auth pass/fail, snapshot on connect, disconnect cleanup, reconnect
+- Pipeline: `_on_wake` listening/skip-while-speaking, `_run_command` thinking, `_process_command` speaking+idle, `process_text_command` speaking+idle
+
+### Design decisions
+- **Event bus in `core/` not `server/`**: `server.routes.command` → `core.pipeline` → `core.events` is a clean DAG. `core.pipeline` → `server.ws` would create a cycle (`server.main` imports both) causing `ImportError` at startup.
+- **`?token=` query param for WS auth**: `Authorization` headers can't be set by native WebSocket API in browsers. If Cloudflare Tunnel is ever enabled, open WS = live transcript leak — the token check is essential.
+- **`call_soon_threadsafe` + `asyncio.Queue` over `threading.Queue`**: The WS handler is async (uvicorn event loop). Using `asyncio.Queue.put_nowait` keeps delivery in the event loop thread without extra synchronization overhead.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 6B + 7A + 7B: Browser, per-app audio, Spotify (Claude Sonnet 4.6)
 
 Shipped three new tool modules. Test count: 177 → 229 (52 new tests, 0 regressions).

@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from server.routes import health, command
+from server import ws as ws_module
 
 app = FastAPI(title="Bobby", version="1.0.0", docs_url="/api/docs")
 
@@ -27,6 +28,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api")
 app.include_router(command.router, prefix="/api")
+app.include_router(ws_module.router)
 
 # Serve the built React PWA as the root if it exists.
 # During development the Vite dev server handles this instead.

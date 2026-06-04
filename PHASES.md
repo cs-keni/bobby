@@ -608,6 +608,31 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 
 ---
 
+## Phase 12 — Desktop UI (Tauri Overlay)
+
+Architecture locked by `/plan-eng-review` + Codex outside voice on 2026-06-04. Tech stack: Tauri (Rust + React). WS backend must ship before any Tauri code.
+
+### UI-A — WebSocket Backend
+
+- [x] **T1** — `core/events.py`: event bus with `broadcast_state()`, `subscribe()`, `unsubscribe()`, `get_current_state()`. Thread-safe via `_lock`; asyncio delivery via `call_soon_threadsafe`. Modeled on `core/notifications.py`.
+- [x] **T2** — `core/pipeline.py`: wire `broadcast_state` at 5 call sites (listening in `_on_wake`, thinking in `_run_command`, speaking+idle in `_process_command`, speaking+idle in `process_text_command`)
+- [x] **T3** — `server/ws.py`: `GET /ws?token=` WebSocket endpoint. Auth via query param. Snapshot on connect. Clean unsubscribe on disconnect. Mounted in `server/main.py`.
+- [ ] **T4** *(manual)* — Browser verify: `new WebSocket("ws://localhost:8765/ws?token=...")` → confirm `{"state":"idle"}` snapshot + live events on wake word
+- [x] **T5** — 23 tests: `tests/test_server_ws.py` (event bus + WS endpoint) + `tests/test_pipeline_broadcast.py` (all state transitions). Baseline: 236 → 259 passed.
+
+### UI-B — Tauri Desktop Panel
+
+- [ ] **T6** *(Windows terminal)* — Scaffold Tauri at `desktop/`. `cargo install tauri-cli`, `npm create tauri-app@latest desktop -- --template react-ts`. Add `desktop/target/` + `desktop/node_modules/` to `.gitignore`.
+- [ ] **T7** — Full Tauri React panel: tray icon (`tauri-plugin-tray`), always-on-top frameless side panel, WS client (`desktop/src/ws.ts`) with exponential backoff reconnect, state-driven rendering (idle/listening/thinking/speaking), 300ms spring slide-in/out, Bobby orb with state pulse, response text + transcript scroll.
+- [ ] **T8** — CSS sine-curve waveform on speaking state. `tauri-plugin-window-vibrancy` for Mica blur. Conversation history scroll. Text input fallback.
+
+### UI-C — Polish & Auto-start
+
+- [ ] Windows Task Scheduler entry: `wsl -d Ubuntu -- bash -c 'cd /mnt/c/dev/bobby && python main.py'`
+- [ ] Shared React components between phone PWA + desktop Tauri panel (future refactor)
+
+---
+
 ## Current Status
 
 - [x] Phase 0 — Project Setup (CI done, WoL prereq deferred — waiting on Pi Zero 2)
@@ -627,6 +652,7 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver
 - [~] Phase 11 — Second Brain (Obsidian) — Phase A shipped (fd1b2b1); Phase B-RAG shipped (Recall@5 100%); Phase B remaining (auto-session-capture, morning brief); Phase C scaffolded (needs Kenny to trigger first profile build + E2E test)
+- [~] Phase 12 — Desktop UI (Tauri) — UI-A WS backend complete (T1–T3, T5: 23 tests); T4 manual browser verify pending; T6–T8 Tauri scaffold + panel not started
 
 ---
 

@@ -1,14 +1,14 @@
 # Bobby — Handoff
 
-## Last Updated: 2026-06-04 (Claude Sonnet 4.6 — post Phase 2B/2C/6B/7A/7B)
+## Last Updated: 2026-06-04 (Claude Sonnet 4.6 — Phase 12 T1–T5 WS backend)
 
 ---
 
 ## Current State
 
-**Everything committed and pushed. HEAD is `920ef7a` on main. 229 tests passing, 1 skipped.**
+**HEAD is `caa2745` (pre-commit; T1–T5 staged, not yet pushed). 259 tests passing, 1 skipped.**
 
-Bobby is in daily-driver state. The full voice pipeline is working. Five new tool modules shipped today.
+Phase 12 WS backend is complete. `core/events.py`, `server/ws.py`, and pipeline wiring are in. The Tauri work (T6–T8) is the remaining implementation. T4 (browser verify) should be done manually before starting T6.
 
 ---
 

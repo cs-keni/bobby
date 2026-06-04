@@ -13,6 +13,7 @@ from pathlib import Path
 
 from core import config
 from core.brain import think
+from core.events import broadcast_state
 from core.logging import get_logger
 from core.notifications import _tts_queue
 from core.stt import record_until_silence, transcribe
@@ -42,6 +43,7 @@ def _on_wake() -> None:
     if _speaking.is_set():
         log.debug("Wake word during speech — ignoring (Bobby is talking)")
         return
+    broadcast_state("listening")
     _listening.set()
 
 
@@ -169,6 +171,7 @@ def _run_command(text: str, via_api: bool = False) -> str:
     if not text.strip():
         return ""
 
+    broadcast_state("thinking")
     log.info(f"You: {text}")
 
     with _history_lock:
@@ -279,6 +282,7 @@ def _process_command(text: str) -> None:
     with _processing_lock:
         response_text = _run_command(text, via_api=False)
     if response_text:
+        broadcast_state("speaking", text=response_text)
         _speaking.set()
         try:
             t = threading.Thread(target=speak, args=(response_text,), daemon=True, name="tts")
@@ -288,6 +292,9 @@ def _process_command(text: str) -> None:
                 log.warning(f"speak() still running after {_SPEAK_TIMEOUT}s — continuing (audio may be cut short)")
         finally:
             _speaking.clear()
+            broadcast_state("idle")
+    else:
+        broadcast_state("idle")
 
 
 def process_text_command(text: str, return_audio: bool = True) -> dict:
@@ -310,9 +317,11 @@ def process_text_command(text: str, return_audio: bool = True) -> dict:
 
     audio_bytes = None
     if return_audio and response_text:
+        broadcast_state("speaking", text=response_text)
         from core.tts import synthesize
         audio_bytes = synthesize(response_text)
 
+    broadcast_state("idle")
     return {"response": response_text, "audio_bytes": audio_bytes}
 
 
