@@ -300,10 +300,33 @@ bobby/
 
 ---
 
+## Phase 6B — Browser / Chrome Integration ✓ SHIPPED
+*Goal: Open any website hands-free. No Playwright needed for URL opening.*
+
+- [x] `tools/browser.py`: `open_url`, `open_search`, `open_site`
+  - [x] `open_url(url)` — opens in Chrome via `cmd.exe /c start chrome "url"` (WSL-aware)
+  - [x] `open_search(query, site)` — constructs Google search URL, opens in Chrome
+  - [x] `open_site(name)` — resolves 30+ friendly aliases to direct URLs; falls back to Google search
+  - [x] Job site aliases: indeed, linkedin, glassdoor, levels.fyi, handshake, wellfound
+  - [x] Career page aliases: google, meta, microsoft, amazon, tiktok, apple, netflix, spotify, airbnb, stripe, openai, anthropic
+  - [x] Bobby uses training knowledge for unknown URLs — just calls `open_url(resolved_url)`
+- [x] `tests/test_browser.py`: 13 tests ✓
+
+**Usage examples:**
+- "open youtube" → `open_site("youtube")`
+- "open tiktok careers" → `open_site("tiktok careers")` → `careers.tiktok.com`
+- "open indeed" → pre-filtered entry-level software engineer search
+- "open linkedin jobs" → pre-filtered entry-level software engineer search
+- "open anthropic's career site" → `open_site("anthropic careers")`
+- "search for front-end developer jobs on linkedin" → `open_search("front-end developer jobs", site="linkedin.com")`
+
+---
+
 ## Phase 6 — Browser Automation & Web Tasks
 *Goal: Bobby can use the internet for you.*
 
-- [ ] **Browser control via Playwright**
+- [x] URL opening — SHIPPED (Phase 6B above)
+- [ ] **Browser control via Playwright** (deeper automation)
   - [ ] Open URLs ("bobby, open youtube")
   - [ ] Navigate to specific pages
   - [ ] Click elements by description (Claude Vision identifies them)
@@ -326,13 +349,57 @@ bobby/
 
 ---
 
+## Phase 7A — Per-App Audio ✓ SHIPPED
+*Goal: Control individual app volumes independently while gaming.*
+
+- [x] `tools/audio.py`: `list_audio_apps`, `get_app_volume`, `set_app_volume`
+  - [x] PowerShell inline C# WASAPI: `IAudioSessionManager2` + `ISimpleAudioVolume`
+  - [x] `list_audio_apps()` — lists all apps currently producing audio with volume + mute state
+  - [x] `get_app_volume(app)` — reads volume for a specific app's audio session
+  - [x] `set_app_volume(app, level, mute)` — sets volume/mute for specific app, independent of system
+  - [x] App name resolver: "youtube"→chrome, "spotify"→spotify, "discord"→discord, partial match
+  - [x] Note: "youtube" targets all Chrome audio sessions (can't distinguish Chrome tabs at OS level)
+- [x] `tests/test_audio.py`: 18 tests ✓
+
+**Usage examples:**
+- "lower my youtube volume to 30" → `set_app_volume("youtube", level=30)` (Chrome audio → 30%)
+- "mute discord" → `set_app_volume("discord", mute=True)`
+- "what apps are making noise?" → `list_audio_apps()`
+- "what's spotify at?" → `get_app_volume("spotify")`
+
+---
+
+## Phase 7B — Spotify Integration ✓ SHIPPED (OAuth setup required)
+*Goal: Full Spotify control by voice — play playlists, skip, volume.*
+
+- [x] `tools/spotify.py`: `spotify_play`, `spotify_control`, `spotify_volume`, `spotify_current_track`
+  - [x] `spotify_play(query, type)` — searches user playlists first, then Spotify catalog
+  - [x] `spotify_control(action)` — pause/resume/next/previous/shuffle_on/shuffle_off
+  - [x] `spotify_volume(level)` — sets Spotify's own playback volume (independent of system/app volume)
+  - [x] `spotify_current_track()` — reads track name + artist + album
+  - [x] OAuth via spotipy: first-time auth opens Chrome, token cached at `~/.bobby/spotify_cache`
+  - [x] `spotify.enabled` gate — graceful error if not configured
+- [x] `tests/test_spotify.py`: 22 tests ✓
+
+**One-time Spotify setup:**
+1. Go to developer.spotify.com/dashboard → Create App
+2. Set redirect URI to: `http://127.0.0.1:8888/callback` (exact match)
+3. In config.yaml: set `spotify.client_id`, `spotify.client_secret`, `spotify.enabled: true`
+4. Run any Spotify command → Bobby opens Chrome to auth URL → approve → done
+
+**Usage examples:**
+- "play my Vietnamese playlist" → `spotify_play("vietnamese")`
+- "play some lo-fi" → `spotify_play("lo-fi hip hop")`
+- "skip this song" → `spotify_control("next")`
+- "what's playing?" → `spotify_current_track()`
+- "lower spotify to 40" → `spotify_volume(40)`
+
+---
+
 ## Phase 7 — Media & Smart Integrations
 *Goal: Bobby plugs into the apps you actually use.*
 
-- [ ] **Spotify control** — deferred (requires Spotify Web API OAuth setup)
-  - [ ] Play/pause/skip/volume
-  - [ ] "Play something chill" → mood-based playlist
-  - [ ] "What's this song?" → reads current track
+- [x] **Spotify control** — SHIPPED (Phase 7B above, OAuth setup required)
 - [x] **System media controls** (`tools/media.py` `system_media`)
   - [x] Global play/pause (works on any media)
   - [x] Next/previous track
@@ -548,6 +615,9 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 - [~] Phase 2 — OS Control (core done; volume control + context-aware window targeting deferred)
 - [x] Phase 2B — File System Search (shipped: search_files, open_file, list_folder — 22 tests ✓)
 - [x] Phase 2C — Discord Integration (shipped: discord_navigate, discord_voice — 23 tests ✓)
+- [x] Phase 6B — Browser/Chrome Integration (shipped: open_url, open_search, open_site — 13 tests ✓)
+- [x] Phase 7A — Per-App Audio (shipped: list_audio_apps, get_app_volume, set_app_volume — 18 tests ✓)
+- [x] Phase 7B — Spotify Integration (shipped: spotify_play, spotify_control, spotify_volume, spotify_current_track — 22 tests ✓; OAuth setup required)
 - [~] Phase 3 — Memory Layer (core SQLite facts + history done, memory injection wired into pipeline; ChromaDB semantic search deferred)
 - [~] Phase 4 — Phone Bridge (server + PWA done; Cloudflare Tunnel + mDNS + WoL deferred)
 - [ ] Phase 5 — Remote Screen & Files

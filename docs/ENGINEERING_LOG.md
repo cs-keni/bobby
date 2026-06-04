@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-06-04 — Phase 6B + 7A + 7B: Browser, per-app audio, Spotify (Claude Sonnet 4.6)
+
+Shipped three new tool modules. Test count: 177 → 229 (52 new tests, 0 regressions).
+Discord config.yaml updated with real server/channel IDs (BUBBLE BUTT BOTTOM BOIS).
+
+### Phase 6B — `tools/browser.py`
+- `open_url`: opens Chrome via `cmd.exe /c start chrome "url"` on WSL
+- `open_search`: constructs Google search URL with optional site restriction
+- `open_site`: 30+ friendly aliases including job sites (indeed, linkedin, glassdoor, levels.fyi) and career pages (tiktok, google, meta, apple, etc.); falls back to Google search for unknowns
+- Bobby (Claude) resolves friendly names to URLs from training knowledge — no URL map lookup needed for most sites
+
+### Phase 7A — `tools/audio.py`
+- PowerShell inline C# WASAPI for per-process audio session control (IAudioSessionManager2)
+- `list_audio_apps`, `get_app_volume`, `set_app_volume(app, level, mute)`
+- "youtube" → chrome process (all Chrome audio sessions targeted — can't distinguish tabs at OS level)
+- C# type compiled once per PS session (~400ms), cached after first call
+
+### Phase 7B — `tools/spotify.py`
+- spotipy OAuth 2.0 with token cache at `~/.bobby/spotify_cache`
+- First-time auth: Bobby opens Chrome to auth URL, user approves, token stored silently
+- `spotify_play`: searches user's own playlists first (partial match), falls back to catalog
+- `spotify_control`: pause/resume/next/previous/shuffle via Spotify Web API
+- `spotify_volume`: Spotify app playback volume (independent of system/WASAPI volume)
+- `spotify.enabled` gate: graceful error message if credentials not configured yet
+- spotipy added to pyproject.toml dependencies
+
+### Design decisions
+- **No Playwright for URL opening**: `cmd.exe /c start chrome "url"` is sufficient and instant. Playwright is overkill until Phase 6 deeper automation (tab management, form fill, etc.)
+- **Per-app audio via PowerShell WASAPI, not pycaw**: pycaw is `sys_platform == 'win32'` only; won't load in WSL. PowerShell approach is consistent with existing system volume code and avoids dual-path logic.
+- **Spotify playlist search: user playlists first**: The user said "play my Vietnamese playlist" — searching their own saved playlists before the catalog respects that intent. Catalog fallback covers cases where the playlist isn't saved yet.
+
+Commit hash: TBD
+
+---
+
 ## 2026-06-04 — Phase 2B + 2C: File ops and Discord integration (Claude Sonnet 4.6)
 
 Shipped two new tool modules. Test count: 132 → 177 (45 new tests, 0 regressions).
@@ -26,7 +61,7 @@ Shipped two new tool modules. Test count: 132 → 177 (45 new tests, 0 regressio
 - **Folder alias resolver tries partial match**: "vid" → "videos", "docs" → "documents" — matches how people speak, not just exact config key names.
 - **`_win_home` cached with lru_cache**: The `cmd.exe` subprocess to detect USERPROFILE runs exactly once per process. Tests use `cache_clear()` + `monkeypatch` to isolate.
 
-Commit hash: TBD (logging after commit)
+Commit hash: c23d23f
 
 ---
 

@@ -1,6 +1,12 @@
-# Current Task — Phase 2B + 2C: File Ops + Discord Integration
+# Current Task — Phase 6B + 7A + 7B: Browser, Per-App Audio, Spotify
 
-**Status:** COMPLETE ✓ — Phase 2B and 2C shipped. 177 tests passing (was 132).
+**Status:** COMPLETE ✓ — All three phases shipped. 229 tests passing (was 177).
+
+**Spotify requires one-time setup before it works:**
+1. developer.spotify.com/dashboard → Create App
+2. Redirect URI: `http://127.0.0.1:8888/callback`
+3. config.yaml: add `spotify.client_id`, `spotify.client_secret`, set `spotify.enabled: true`
+4. Run any Spotify voice command → Bobby opens Chrome auth → approve once → works forever
 
 **Before starting:** Paste the Obsidian API key and vault path into `config.yaml`, then set `obsidian.enabled: true`.
 

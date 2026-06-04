@@ -41,6 +41,9 @@ dependencies = [
     # Browser automation (Phase 6 — not yet implemented)
     # "playwright>=1.48.0",
 
+    # Spotify Web API
+    "spotipy>=2.24.0",
+
     # Screen capture
     "mss>=9.0.1",             # fast cross-platform screenshots (MJPEG stream)
     "Pillow>=10.0.0",
