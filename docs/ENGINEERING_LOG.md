@@ -41,7 +41,7 @@ Shipped the WS backend layer that Tauri depends on. Test count: 236 → 259 (23 
 - **`?token=` query param for WS auth**: `Authorization` headers can't be set by native WebSocket API in browsers. If Cloudflare Tunnel is ever enabled, open WS = live transcript leak — the token check is essential.
 - **`call_soon_threadsafe` + `asyncio.Queue` over `threading.Queue`**: The WS handler is async (uvicorn event loop). Using `asyncio.Queue.put_nowait` keeps delivery in the event loop thread without extra synchronization overhead.
 
-Commit hash: (pending)
+Commit hash: d7cfca7
 
 ---
 
