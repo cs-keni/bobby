@@ -1,6 +1,6 @@
-# Current Task — Phase 11A: Obsidian Integration (Phase A)
+# Current Task — Phase 2B + 2C: File Ops + Discord Integration
 
-**Status:** COMPLETE ✓ — Phase 11A shipped at fd1b2b1. All T1–T8 done, 102 tests passing.
+**Status:** COMPLETE ✓ — Phase 2B and 2C shipped. 177 tests passing (was 132).
 
 **Before starting:** Paste the Obsidian API key and vault path into `config.yaml`, then set `obsidian.enabled: true`.
 

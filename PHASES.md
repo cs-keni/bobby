@@ -156,6 +156,55 @@ bobby/
 
 ---
 
+## Phase 2B — File System Search ✓ SHIPPED
+*Goal: Find and open files on your PC by voice.*
+
+- [x] `tools/file_ops.py`: `search_files`, `open_file`, `list_folder`
+  - [x] `search_files(query, folder, file_type, newer_than_days, recursive)` — pathlib.glob, top 10 results by mtime
+  - [x] `open_file(path)` — opens with Windows default app via `cmd.exe /c start`, accepts WSL or Windows paths
+  - [x] `list_folder(folder, sort_by)` — lists up to 20 items sorted by date/name/size
+  - [x] Folder alias resolver: "downloads"→Downloads, "desktop"→Desktop, "docs"→Documents, etc.
+  - [x] WSL-aware: `_win_home()` detects Windows USERPROFILE from `cmd.exe` subprocess (cached)
+  - [x] `_to_windows_path()`: converts `/mnt/c/Users/...` → `C:\Users\...` for cmd.exe
+  - [x] File type filter: pdf, image, video, audio, document, spreadsheet, archive, code, exe
+- [x] `tests/test_file_ops.py`: 22 tests — all passing ✓
+
+**Usage examples:**
+- "find invoice in my downloads" → `search_files("invoice", folder="downloads")`
+- "look for any PDFs from last week" → `search_files(".pdf", file_type="pdf", newer_than_days=7)`
+- "open it" → `open_file("/mnt/c/Users/keni/Downloads/invoice_2026.pdf")`
+- "list my downloads" → `list_folder("downloads")`
+
+---
+
+## Phase 2C — Discord Integration ✓ SHIPPED
+*Goal: Control Discord hands-free while gaming.*
+
+- [x] `tools/discord.py`: `discord_navigate`, `discord_voice`
+  - [x] `discord_navigate(server, channel)` — opens `discord://-/channels/{guild}/{channel}` via URL scheme; resolves friendly names from config with partial-match
+  - [x] `discord_voice(action)` — mute/unmute/deafen/undeafen/screen_share via atomic PowerShell focus-switch: saves foreground HWND → focuses Discord → SendKeys → restores original window (~250ms, invisible to user)
+  - [x] `_to_sendkeys(keybind)`: converts "ctrl+shift+s" → "^+s" for WScript.Shell SendKeys
+  - [x] Screen share: configurable custom keybind via `discord.screenshare_keybind` in config
+  - [x] Graceful errors: Discord not running, server/channel not configured, keybind not set
+- [x] `config.yaml.example` updated with full `discord:` block schema
+- [x] `tests/test_discord.py`: 23 tests — all passing ✓
+
+**One-time setup required:**
+1. Enable Developer Mode in Discord: Settings → Advanced → Developer Mode
+2. Right-click server icon → Copy Server ID
+3. Right-click each channel → Copy Channel ID
+4. Paste IDs into `config.yaml` under `discord.servers`
+5. For screen share: set a custom keybind in Discord Settings → Keybinds → Toggle Screenshare, add it to config as `discord.screenshare_keybind`
+
+**Usage examples:**
+- "join the server" → `discord_navigate()` — uses defaults from config
+- "join general" → `discord_navigate(channel="general")`
+- "mute me" → `discord_voice("mute")`
+- "deafen" → `discord_voice("deafen")`
+- "share my screen" → `discord_voice("screen_share")` — requires custom keybind
+
+---
+
 ## Phase 3 — Memory Layer
 *Goal: Bobby remembers who you are and what you like.*
 
@@ -497,6 +546,8 @@ Vault is 1250+ notes (well past the 300-note index limit). Full embeddings: 8947
 - [x] Phase 0 — Project Setup (CI done, WoL prereq deferred — waiting on Pi Zero 2)
 - [~] Phase 1 — Core Voice Pipeline (core loop working; streaming TTS, mid-response interrupt, chimes, timeout tests remaining)
 - [~] Phase 2 — OS Control (core done; volume control + context-aware window targeting deferred)
+- [x] Phase 2B — File System Search (shipped: search_files, open_file, list_folder — 22 tests ✓)
+- [x] Phase 2C — Discord Integration (shipped: discord_navigate, discord_voice — 23 tests ✓)
 - [~] Phase 3 — Memory Layer (core SQLite facts + history done, memory injection wired into pipeline; ChromaDB semantic search deferred)
 - [~] Phase 4 — Phone Bridge (server + PWA done; Cloudflare Tunnel + mDNS + WoL deferred)
 - [ ] Phase 5 — Remote Screen & Files

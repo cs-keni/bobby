@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-06-04 — Phase 2B + 2C: File ops and Discord integration (Claude Sonnet 4.6)
+
+Shipped two new tool modules. Test count: 132 → 177 (45 new tests, 0 regressions).
+
+### Phase 2B — `tools/file_ops.py`
+- `search_files`: pathlib.glob search with folder aliases, type filter, date filter, top-10 cap
+- `open_file`: opens via `cmd.exe /c start`, accepts WSL paths (converted via `_to_windows_path`)
+- `list_folder`: sorted by date/name/size, capped at 20 entries
+- `_win_home()`: detects Windows USERPROFILE from `cmd.exe` subprocess, lru_cache'd
+- No new dependencies — pure stdlib + existing pathlib/subprocess
+
+### Phase 2C — `tools/discord.py`
+- `discord_navigate`: Discord URL scheme `discord://-/channels/{guild}/{channel}`, friendly name resolution from config with partial-match
+- `discord_voice`: atomic PowerShell focus-switch (GetForegroundWindow → AppActivate Discord → SendKeys → SetForegroundWindow restore, ~250ms total)
+- Screen share: custom keybind via `discord.screenshare_keybind` in config
+- `_to_sendkeys`: converts human keybind notation ("ctrl+shift+s") → WScript.Shell SendKeys ("^+s")
+- `config.yaml.example` updated with full `discord:` schema
+
+### Design decisions
+- **Focus-switch over Discord RPC**: The unofficial Discord local RPC (pypresence) is read-only for most voice state — it can't set mute/deafen programmatically. Focus-switch + SendKeys is more reliable and requires no additional library.
+- **Single PowerShell invocation**: Saved HWND → focus → keys → restore all in one `subprocess.run` call to avoid TOCTOU races between save and restore.
+- **Folder alias resolver tries partial match**: "vid" → "videos", "docs" → "documents" — matches how people speak, not just exact config key names.
+- **`_win_home` cached with lru_cache**: The `cmd.exe` subprocess to detect USERPROFILE runs exactly once per process. Tests use `cache_clear()` + `monkeypatch` to isolate.
+
+Commit hash: TBD (logging after commit)
+
+---
+
 ## 2026-06-03 — E2E test session + full RCA (Claude Sonnet 4.6)
 
 First real daily-driver test. Volume now works. All blocking bugs resolved.

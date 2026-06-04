@@ -33,6 +33,21 @@ memory_db_path: "~/.bobby/memory.db"
 vector_db_path: "~/.bobby/chroma"
 max_memory_tokens: 4000            # hard cap on memory injected per prompt
 
+# Discord integration
+# One-time setup: enable Developer Mode in Discord (Settings → Advanced), then
+# right-click your server icon → Copy Server ID, and each channel → Copy Channel ID.
+discord:
+  default_server: "your server name here"   # used when you say "join the server"
+  default_channel: "your channel name here"  # used when you say "join the server"
+  # screenshare_keybind: "ctrl+shift+s"      # optional: set a custom keybind in Discord
+  #                                           # Settings → Keybinds → Toggle Screenshare
+  servers:
+    your_server_name:                         # use underscores, matches how you say it
+      id: "YOUR_SERVER_SNOWFLAKE_ID"          # right-click server → Copy Server ID
+      channels:
+        general: "CHANNEL_SNOWFLAKE_ID"       # right-click channel → Copy Channel ID
+        another_channel: "CHANNEL_SNOWFLAKE_ID"
+
 # Behavior
 tts_fallback: true                 # fall back to pyttsx3 if ElevenLabs is down
 confirmation_required_commands:    # terminal commands that always require confirmation
