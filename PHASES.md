@@ -617,7 +617,7 @@ Architecture locked by `/plan-eng-review` + Codex outside voice on 2026-06-04. T
 - [x] **T1** — `core/events.py`: event bus with `broadcast_state()`, `subscribe()`, `unsubscribe()`, `get_current_state()`. Thread-safe via `_lock`; asyncio delivery via `call_soon_threadsafe`. Modeled on `core/notifications.py`.
 - [x] **T2** — `core/pipeline.py`: wire `broadcast_state` at 5 call sites (listening in `_on_wake`, thinking in `_run_command`, speaking+idle in `_process_command`, speaking+idle in `process_text_command`)
 - [x] **T3** — `server/ws.py`: `GET /ws?token=` WebSocket endpoint. Auth via query param. Snapshot on connect. Clean unsubscribe on disconnect. Mounted in `server/main.py`.
-- [ ] **T4** *(manual)* — Browser verify: `new WebSocket("ws://localhost:8765/ws?token=...")` → confirm `{"state":"idle"}` snapshot + live events on wake word
+- [x] **T4** *(manual)* — Browser verify: confirmed `listening→thinking→speaking→idle` via Chrome console 2026-06-04. Wake word confidence 0.96, open_site tool call worked end-to-end.
 - [x] **T5** — 23 tests: `tests/test_server_ws.py` (event bus + WS endpoint) + `tests/test_pipeline_broadcast.py` (all state transitions). Baseline: 236 → 259 passed.
 
 ### UI-B — Tauri Desktop Panel
@@ -652,7 +652,7 @@ Architecture locked by `/plan-eng-review` + Codex outside voice on 2026-06-04. T
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver
 - [~] Phase 11 — Second Brain (Obsidian) — Phase A shipped (fd1b2b1); Phase B-RAG shipped (Recall@5 100%); Phase B remaining (auto-session-capture, morning brief); Phase C scaffolded (needs Kenny to trigger first profile build + E2E test)
-- [~] Phase 12 — Desktop UI (Tauri) — UI-A WS backend complete (T1–T3, T5: 23 tests); T4 manual browser verify pending; T6–T8 Tauri scaffold + panel not started
+- [~] Phase 12 — Desktop UI (Tauri) — UI-A fully complete (T1–T5 + T4 manual verified 2026-06-04); T6–T8 Tauri scaffold + panel not started
 
 ---
 
