@@ -14,16 +14,12 @@ import pytest
 
 @pytest.fixture()
 def fake_home(tmp_path, monkeypatch):
-    """
-    Patch _win_home() to return tmp_path and clear the lru_cache,
-    so each test gets its own isolated directory.
-    """
+    """Patch _win_home() and reset the module-level cache so each test is isolated."""
     import tools.file_ops as fo
-    original = fo._win_home  # hold reference to the real lru_cache wrapper
-    original.cache_clear()
+    monkeypatch.setattr(fo, "_WIN_HOME_CACHE", None)
     monkeypatch.setattr(fo, "_win_home", lambda: tmp_path)
     yield tmp_path
-    original.cache_clear()
+    monkeypatch.setattr(fo, "_WIN_HOME_CACHE", None)
 
 
 def _make_file(path: Path, content: str = "x", mtime_offset_days: int = 0) -> Path:

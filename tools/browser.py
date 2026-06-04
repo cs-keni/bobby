@@ -73,11 +73,8 @@ _KNOWN_SITES: dict[str, str] = {
 def _open_in_chrome(url: str) -> ToolResult:
     """Open a URL in Chrome (or default browser as fallback)."""
     try:
-        if sys.platform == "win32":
-            subprocess.Popen(f'start chrome "{url}"', shell=True)
-        else:
-            # WSL: try Chrome first, fall back to default browser
-            subprocess.Popen(f'cmd.exe /c start chrome "{url}"', shell=True)
+        # Array args + shell=False prevents shell injection via URL metacharacters.
+        subprocess.Popen(["cmd.exe", "/c", "start", "chrome", url])
         log.info(f"Browser opened: {url[:80]}")
         return ToolResult(success=True, message=f"Opening {url}", data={"url": url})
     except Exception as e:
@@ -106,9 +103,13 @@ def _open_in_chrome(url: str) -> ToolResult:
 )
 def open_url(url: str) -> ToolResult:
     url = url.strip()
+    # Check scheme BEFORE prepending default prefix so file://, javascript:, etc. are caught.
+    from urllib.parse import urlparse
+    pre_scheme = urlparse(url).scheme.lower()
+    if pre_scheme and pre_scheme not in ("http", "https"):
+        return ToolResult(success=False, message=f"Unsafe URL scheme blocked: {url}")
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
-
     return _open_in_chrome(url)
 
 

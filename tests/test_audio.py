@@ -36,6 +36,16 @@ def test_resolve_process_unknown_passthrough():
     assert _resolve_process("somegame") == "somegame"
 
 
+def test_resolve_process_rejects_injection():
+    from tools.audio import _resolve_process
+    assert _resolve_process("'; Invoke-Expression 'calc.exe'") == ""
+
+
+def test_resolve_process_rejects_special_chars():
+    from tools.audio import _resolve_process
+    assert _resolve_process("app; rm -rf /") == ""
+
+
 # ---------------------------------------------------------------------------
 # list_audio_apps
 # ---------------------------------------------------------------------------
@@ -176,6 +186,20 @@ def test_set_app_volume_no_params():
     from tools.audio import set_app_volume
     result = set_app_volume("youtube")
     assert not result.success
+
+
+def test_set_app_volume_invalid_app_name():
+    from tools.audio import set_app_volume
+    result = set_app_volume("'; calc.exe", level=50)
+    assert not result.success
+    assert "Invalid app name" in result.message
+
+
+def test_get_app_volume_invalid_app_name():
+    from tools.audio import get_app_volume
+    result = get_app_volume("'; calc.exe")
+    assert not result.success
+    assert "Invalid app name" in result.message
 
 
 def test_set_app_volume_timeout():

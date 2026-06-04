@@ -10,7 +10,6 @@ import os
 import subprocess
 import sys
 from datetime import datetime, timedelta
-from functools import lru_cache
 from pathlib import Path
 
 from core.logging import get_logger
@@ -50,14 +49,22 @@ _TYPE_EXTENSIONS: dict[str, set[str]] = {
 }
 
 
-@lru_cache(maxsize=1)
+_WIN_HOME_CACHE: Path | None = None
+
+
 def _win_home() -> Path:
     """
     Return the Windows user home directory as a WSL-compatible Path.
-    Cached after first call (subprocess only runs once per process).
+    Cached on first successful resolution only — failures are not cached
+    so a transient cmd.exe timeout doesn't permanently return the wrong path.
     """
+    global _WIN_HOME_CACHE
+    if _WIN_HOME_CACHE is not None:
+        return _WIN_HOME_CACHE
+
     if sys.platform == "win32":
-        return Path.home()
+        _WIN_HOME_CACHE = Path.home()
+        return _WIN_HOME_CACHE
     try:
         result = subprocess.run(
             ["cmd.exe", "/c", "echo", "%USERPROFILE%"],
@@ -67,10 +74,11 @@ def _win_home() -> Path:
         if win_path and "\\" in win_path:
             drive = win_path[0].lower()
             rest = win_path[2:].replace("\\", "/")
-            return Path(f"/mnt/{drive}{rest}")
+            _WIN_HOME_CACHE = Path(f"/mnt/{drive}{rest}")
+            return _WIN_HOME_CACHE
     except Exception as e:
         log.debug(f"_win_home WSL detection failed: {e}")
-    return Path.home()
+    return Path.home()  # not cached — retry next call
 
 
 def _resolve_folder(folder: str) -> Path:
@@ -269,7 +277,7 @@ def open_file(path: str) -> ToolResult:
             os.startfile(str(p))
         else:
             win_path = _to_windows_path(p)
-            subprocess.Popen(f'cmd.exe /c start "" "{win_path}"', shell=True)
+            subprocess.Popen(["cmd.exe", "/c", "start", "", win_path])
         log.info(f"Opened file: {p.name}")
         return ToolResult(success=True, message=f"Opening {p.name}.")
     except Exception as e:

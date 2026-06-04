@@ -77,18 +77,22 @@ def _get_sp():
         if not token_info:
             return None
     elif auth.is_token_expired(token_info):
-        token_info = auth.refresh_access_token(token_info["refresh_token"])
+        try:
+            token_info = auth.refresh_access_token(token_info["refresh_token"])
+        except Exception:
+            # Refresh token revoked (user removed app access, or 90-day inactivity).
+            # Delete the stale cache so the next call triggers a clean first-time auth.
+            cache_path.unlink(missing_ok=True)
+            log.warning("Spotify refresh token revoked — cache cleared, re-auth required.")
+            return None
 
     return spotipy.Spotify(auth=token_info["access_token"])
 
 
 def _open_chrome(url: str) -> None:
-    """Open a URL in Chrome (WSL-aware)."""
+    """Open a URL in Chrome (WSL-aware). Array args prevent shell injection."""
     try:
-        if sys.platform == "win32":
-            subprocess.Popen(f'start chrome "{url}"', shell=True)
-        else:
-            subprocess.Popen(f'cmd.exe /c start chrome "{url}"', shell=True)
+        subprocess.Popen(["cmd.exe", "/c", "start", "chrome", url])
     except Exception as e:
         log.error(f"_open_chrome failed: {e}")
 

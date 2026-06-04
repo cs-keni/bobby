@@ -108,8 +108,10 @@ def test_discord_navigate_opens_url():
     assert result.success
     assert result.data["guild_id"] == "111222333444555666"
     assert result.data["channel_id"] == "999888777666555444"
-    call_args = mock_popen.call_args[0][0]
-    assert "discord://-/channels/111222333444555666/999888777666555444" in call_args
+    # Array args: ["cmd.exe", "/c", "start", "", url]
+    popen_args = mock_popen.call_args[0][0]
+    url_arg = popen_args[-1] if isinstance(popen_args, list) else popen_args
+    assert "discord://-/channels/111222333444555666/999888777666555444" in url_arg
 
 
 def test_discord_navigate_uses_defaults():

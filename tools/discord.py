@@ -30,7 +30,6 @@ Bobby will trigger it via the same focus-switch mechanism.
 
 import subprocess
 import sys
-import time
 
 from core import config
 from core.logging import get_logger
@@ -179,14 +178,14 @@ def discord_navigate(server: str = "", channel: str = "") -> ToolResult:
     if err:
         return ToolResult(success=False, message=err)
 
+    # Snowflake IDs must be 17-20 digit integers. Guards against malformed config.
+    if not (guild_id and guild_id.isdigit() and channel_id and channel_id.isdigit()):
+        return ToolResult(success=False, message="Discord server/channel IDs in config must be numeric snowflake IDs.")
+
     url = f"discord://-/channels/{guild_id}/{channel_id}"
 
     try:
-        if sys.platform == "win32":
-            subprocess.Popen(f'start "" "{url}"', shell=True)
-        else:
-            subprocess.Popen(f'cmd.exe /c start "" "{url}"', shell=True)
-
+        subprocess.Popen(["cmd.exe", "/c", "start", "", url])
         log.info(f"Discord navigate → {server}/{channel} ({guild_id}/{channel_id})")
         return ToolResult(
             success=True,

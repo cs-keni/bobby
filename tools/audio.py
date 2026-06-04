@@ -14,6 +14,7 @@ Bobby can answer "what apps are making noise?" via list_audio_apps,
 then the user can target the right one by name.
 """
 
+import re
 import subprocess
 import sys
 
@@ -43,7 +44,8 @@ _APP_PROCESS: dict[str, str] = {
 }
 
 # PowerShell C# type for per-app audio session control.
-# Compiled once per PS session (~400ms first call, cached after).
+# Re-compiled on every _ps() call (~400ms) since each call spawns a new powershell.exe process.
+# Add-Type caching is per-process, not per-invocation.
 _PS_APP_AUDIO_CS = r"""
 Add-Type -TypeDefinition @'
 using System;
@@ -205,8 +207,15 @@ def _ps(cmd: str, timeout: int = 12) -> tuple[int, str]:
     return r.returncode, r.stdout.strip()
 
 
+_PROC_NAME_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
+
+
 def _resolve_process(app_name: str) -> str:
-    """Resolve a friendly app name to a Windows process name substring."""
+    """
+    Resolve a friendly app name to a Windows process name substring.
+    Returns "" for names that fail the alphanumeric safety check — callers
+    must reject empty strings to prevent PowerShell injection.
+    """
     key = app_name.lower().strip()
     if key in _APP_PROCESS:
         return _APP_PROCESS[key]
@@ -214,8 +223,10 @@ def _resolve_process(app_name: str) -> str:
     for alias, proc in _APP_PROCESS.items():
         if key in alias or alias.startswith(key):
             return proc
-    # Fall back to the name itself (user might say the exact process name)
-    return key
+    # Raw fallback: only allow safe process-name characters before injecting into PS
+    if _PROC_NAME_RE.match(key):
+        return key
+    return ""
 
 
 @register_tool(
@@ -245,7 +256,9 @@ def list_audio_apps() -> ToolResult:
     lines = []
     seen: set[str] = set()
     for line in out.splitlines():
-        parts = line.strip().split(":")
+        # rsplit limits to 2 splits from the right so process names containing ":"
+        # (theoretically possible) don't break field indexing.
+        parts = line.strip().rsplit(":", 2)
         if len(parts) < 3:
             continue
         proc_name, vol_str, muted_str = parts[0], parts[1], parts[2]
@@ -292,6 +305,8 @@ def list_audio_apps() -> ToolResult:
 )
 def get_app_volume(app: str) -> ToolResult:
     proc = _resolve_process(app)
+    if not proc:
+        return ToolResult(success=False, message=f"Invalid app name: '{app}'. Use a name like 'spotify', 'chrome', or 'discord'.")
     try:
         rc, out = _ps(_PS_APP_AUDIO_CS + f"\n[AppAudio]::GetVolume('{proc}')\n")
     except subprocess.TimeoutExpired:
@@ -350,6 +365,9 @@ def set_app_volume(app: str, level: int | None = None, mute: bool | None = None)
         return ToolResult(success=False, message="Specify level (0–100) and/or mute (true/false).")
 
     proc = _resolve_process(app)
+    if not proc:
+        return ToolResult(success=False, message=f"Invalid app name: '{app}'. Use a name like 'spotify', 'chrome', or 'discord'.")
+
     ps_cmds = [_PS_APP_AUDIO_CS]
     results = []
 
