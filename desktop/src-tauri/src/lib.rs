@@ -11,12 +11,12 @@ pub fn run() {
             #[cfg(debug_assertions)]
             window.open_devtools();
 
-            // Position at right edge of primary monitor, vertically centered
+            // Position flush with right edge of primary monitor, vertically centered.
+            // margin=0 so the orb's slide animation disappears behind the screen bezel.
             if let Some(monitor) = window.primary_monitor()? {
                 let screen = monitor.size();
                 let win = window.outer_size()?;
-                let margin: i32 = 12;
-                let x = (screen.width as i32).saturating_sub(win.width as i32 + margin);
+                let x = (screen.width as i32).saturating_sub(win.width as i32);
                 let y = (screen.height as i32).saturating_sub(win.height as i32) / 2;
                 window.set_position(tauri::PhysicalPosition::new(x, y))?;
             }

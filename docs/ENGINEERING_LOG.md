@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-06-05 — fix: invisible wall + discord_navigate LLM routing + voice channel scaffold (Claude Sonnet 4.6)
+
+**Invisible wall**: Removed `margin: i32 = 12` in `desktop/src-tauri/src/lib.rs`. Previously the Tauri window was placed 12px from the screen's right edge, so `#root`'s `overflow: hidden` was clipping the orb 12px before the screen edge — giving the illusion of sliding behind a wall. Now `x = screen.width - win.width` (margin=0), the window is flush with the screen and the orb slides in/out behind the actual monitor bezel.
+
+**discord_navigate LLM routing**: Updated `@register_tool` description to explicitly say "Use this — not open_app — when the user says 'open discord', 'go to discord', 'join the call'…". Without this hint, the LLM might call `open_app("discord")` instead, which just launches Discord to its last state rather than navigating to the configured channel.
+
+**Voice channel + screenshare scaffold**: Added `default_voice_channel`, `screenshare_keybind`, and a placeholder `general` voice channel entry to `config.yaml`. User still needs to: (1) enable Discord Developer Mode, (2) copy their voice channel ID into config, (3) set a custom "Toggle Screenshare" keybind in Discord and paste it into `screenshare_keybind`.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — fix: thinking icon → dots + Discord/Electron URI schemes + taskbar scan (Claude Sonnet 4.6)
 
 **Thinking icon**: Changed `OrbIcon` to return `<ListeningDots />` for both `thinking` and `listening` states. Removed `.thinking-ring` CSS and `@keyframes spin` (dead code).

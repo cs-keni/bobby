@@ -143,8 +143,11 @@ def _resolve_server_channel(
 @register_tool(
     name="discord_navigate",
     description=(
-        "Open a specific Discord server and channel in the Discord app. "
+        "Open or navigate to a Discord server and channel. "
+        "Use this — not open_app — when the user says 'open discord', 'go to discord', "
+        "'join the call', or any Discord navigation intent. "
         "Call with no arguments to jump to your default server and channel (set in config). "
+        "For voice channels, pass the channel name; Discord will show the channel so the user can join. "
         "Use friendly names you've configured — e.g. 'bubble butt bottom bois' and 'sex-havers'."
     ),
     parameters={
