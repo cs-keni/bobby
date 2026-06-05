@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-06-05 — fix: orb right-clip + Obsidian open_app (Claude Sonnet 4.6)
+
+**Orb right-clip** — Tauri window is 220px wide, orb at `right: 16px` placed the orb center 42px from the right window edge. The largest orbit blob (48px radius + 4.5px half-size = 52.5px right reach) exceeded that, getting clipped. Fixed by bumping `right: 16px → 36px` (gives 62px clearance, all blobs fit).
+
+**Obsidian open_app** — `cmd.exe /c start "" "Obsidian"` searches App Paths registry for `Obsidian.exe`. Squirrel-installed Electron apps don't always register App Paths cleanly. The brief window was Obsidian launching, detecting an issue (missing vault or single-instance handoff), and exiting. Fixed by changing `APP_MAP["obsidian"]` from `"Obsidian"` to `"obsidian://"` — Windows routes the URI to Obsidian's registered handler, which works whether or not Obsidian is already running.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — Phase 12: orbit rings → soft mini-orb satellites (Claude Sonnet 4.6)
 
 **Removed** dark backdrop (too heavy) and hard geometric orbit arcs (Jarvis-like).

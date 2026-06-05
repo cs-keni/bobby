@@ -53,7 +53,7 @@ APP_MAP: dict[str, str] = {
     "zoom": "zoom",
     "obs": "obs64",
     "steam": "steam",
-    "obsidian": "Obsidian",
+    "obsidian": "obsidian://",
     "notion": "Notion",
     "figma": "figma",
     "cursor": "cursor",
