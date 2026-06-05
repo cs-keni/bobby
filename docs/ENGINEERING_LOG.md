@@ -2,13 +2,21 @@
 
 ---
 
-## 2026-06-05 — feat: discord voice auto-join via Windows UI Automation (Claude Sonnet 4.6)
+## 2026-06-05 — feat: discord voice auto-join via local IPC/RPC (Claude Sonnet 4.6)
 
-**Problem**: `discord://-/channels/{guild_id}/{channel_id}` navigates Discord to a voice channel but does NOT auto-join — the user still has to click "Join Voice". The URI scheme has no join semantics.
+**Problem**: Neither URI scheme nor Windows UI Automation can auto-join Discord voice. URI scheme navigates but doesn't join. Discord's Electron app doesn't expose "Join Voice" in its accessibility tree (BUTTON_NOT_FOUND confirmed in testing).
 
-**Fix**: Added `_join_voice_channel_ui()` in `tools/discord.py`. When `discord_navigate(voice=True)` is called, after launching the URI it waits 1.5s for Discord to render, then uses Windows UI Automation (`UIAutomationClient` assembly) to find the "Join Voice" button by name in the accessibility tree and invoke it. Falls back gracefully with a message if Discord doesn't expose the button (e.g. Electron accessibility varies by version).
+**Fix**: New `tools/discord_rpc.py` implements Discord's local Windows named pipe IPC protocol. When `discord_navigate(voice=True)` is called, it now routes to `discord_rpc.join_voice()` which:
+1. Connects to `\\.\pipe\discord-ipc-N` via PowerShell `NamedPipeClientStream`
+2. Sends `HANDSHAKE` (op=0) → receives `READY`
+3. Sends `AUTHENTICATE` with cached `access_token` → verifies
+4. Sends `VOICE_CHANNEL_SELECT` with `channel_id` → Discord immediately joins
+5. On `AUTH_FAILED`: auto-refreshes token via Discord OAuth2 refresh_token grant
+6. No cached token: sends `AUTHORIZE` → Discord shows one-time popup → exchanges code for token → caches to `~/.bobby/discord_token.json`
 
-Flow: `discord_navigate(voice=True)` → open URI → wait 1.5s → PowerShell UI Automation → `InvokePattern.Invoke()` on "Join Voice" button → return result.
+Requires user to create a Discord Developer Application and add `discord.app_id` + `discord.app_secret` to config.yaml (one-time setup). First "join the call" triggers the authorization popup; all subsequent calls are instant.
+
+Previous UI Automation approach removed from `discord.py` (replaced by RPC import).
 
 Commit hash: (pending)
 
