@@ -140,6 +140,55 @@ def _resolve_server_channel(
     return guild_id, channel_id, ""
 
 
+def _join_voice_channel_ui(channel: str) -> ToolResult:
+    """
+    After discord_navigate opens a voice channel via URI, wait for Discord to render
+    then click the 'Join Voice' button via Windows UI Automation.
+    Falls back gracefully if Discord's accessibility tree doesn't expose the button.
+    """
+    import time
+    time.sleep(1.5)  # give Discord time to navigate and render the channel view
+
+    ps_cmd = r"""
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+$root = [System.Windows.Automation.AutomationElement]::RootElement
+$cond = New-Object System.Windows.Automation.PropertyCondition(
+    [System.Windows.Automation.AutomationElement]::NameProperty, "Join Voice")
+$btn = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+if ($btn -ne $null) {
+    try {
+        $pattern = $btn.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+        $pattern.Invoke()
+        Write-Output "JOINED"
+    } catch {
+        Write-Output "CLICK_FAILED"
+    }
+} else {
+    Write-Output "BUTTON_NOT_FOUND"
+}
+"""
+    try:
+        rc, out = _ps(ps_cmd, timeout=8)
+    except subprocess.TimeoutExpired:
+        return ToolResult(
+            success=False,
+            message=f"Navigated to #{channel} but the join step timed out. Click Join Voice manually.",
+        )
+    except Exception as e:
+        return ToolResult(success=False, message=f"Navigated to #{channel} but couldn't auto-join: {e}")
+
+    if "JOINED" in out:
+        log.info(f"Discord voice joined: #{channel} via UI automation")
+        return ToolResult(success=True, message=f"Joined the call in #{channel}.")
+
+    log.warning(f"Discord join voice UI result: {out.strip()!r}")
+    return ToolResult(
+        success=False,
+        message=f"Navigated to #{channel} but couldn't auto-click Join Voice — click it manually in Discord.",
+    )
+
+
 @register_tool(
     name="discord_navigate",
     description=(
@@ -195,6 +244,10 @@ def discord_navigate(server: str = "", channel: str = "", voice: bool = False) -
     try:
         subprocess.Popen(["cmd.exe", "/c", "start", "", url])
         log.info(f"Discord navigate → {server}/{channel} ({guild_id}/{channel_id})")
+
+        if voice:
+            return _join_voice_channel_ui(channel)
+
         return ToolResult(
             success=True,
             message=f"Opening #{channel} in {server}.",

@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-06-05 — feat: discord voice auto-join via Windows UI Automation (Claude Sonnet 4.6)
+
+**Problem**: `discord://-/channels/{guild_id}/{channel_id}` navigates Discord to a voice channel but does NOT auto-join — the user still has to click "Join Voice". The URI scheme has no join semantics.
+
+**Fix**: Added `_join_voice_channel_ui()` in `tools/discord.py`. When `discord_navigate(voice=True)` is called, after launching the URI it waits 1.5s for Discord to render, then uses Windows UI Automation (`UIAutomationClient` assembly) to find the "Join Voice" button by name in the accessibility tree and invoke it. Falls back gracefully with a message if Discord doesn't expose the button (e.g. Electron accessibility varies by version).
+
+Flow: `discord_navigate(voice=True)` → open URI → wait 1.5s → PowerShell UI Automation → `InvokePattern.Invoke()` on "Join Voice" button → return result.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — fix: invisible wall + discord_navigate LLM routing + voice channel scaffold (Claude Sonnet 4.6)
 
 **Invisible wall**: Removed `margin: i32 = 12` in `desktop/src-tauri/src/lib.rs`. Previously the Tauri window was placed 12px from the screen's right edge, so `#root`'s `overflow: hidden` was clipping the orb 12px before the screen edge — giving the illusion of sliding behind a wall. Now `x = screen.width - win.width` (margin=0), the window is flush with the screen and the orb slides in/out behind the actual monitor bezel.
