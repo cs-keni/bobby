@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-06-04 — Phase 12: click-through fix (setIgnoreCursorEvents) (Claude Sonnet 4.6)
+
+**Bug**: Tauri window covered the right edge of the screen even when the orb was invisible/idle, blocking all mouse clicks in that region. Root cause: the window itself (not just CSS opacity) was capturing events.
+
+**Fix**:
+- Added `"window:allow-set-ignore-cursor-events"` to `desktop/src-tauri/capabilities/default.json`
+- `App.tsx`: call `appWindow.setIgnoreCursorEvents(true)` on initial mount and when orb hides; `setIgnoreCursorEvents(false)` when orb becomes visible
+- `appWindow` is `getCurrentWindow()` from `@tauri-apps/api/window` (already in package.json)
+- `.catch(() => {})` swallows the error gracefully in dev (before Tauri API is fully initialized)
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 12 orb v3: sparkle particles + 3D jelly sphere + fade-to-gray (Claude Sonnet 4.6)
 
 Orb redesign based on Asha blob reference (Genshin Impact / Natlan). Key changes:

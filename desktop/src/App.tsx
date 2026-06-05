@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BobbyWS } from './ws';
 import type { BobbyState } from './types';
 import './App.css';
+
+const appWindow = getCurrentWindow();
 
 const TOKEN = import.meta.env.VITE_BOBBY_TOKEN as string ?? '';
 const WS_URL = `ws://localhost:8765/ws?token=${TOKEN}`;
@@ -81,6 +84,9 @@ export default function App() {
   const wsRef = useRef<BobbyWS | null>(null);
 
   useEffect(() => {
+    // Start click-through until the orb becomes visible for the first time
+    appWindow.setIgnoreCursorEvents(true).catch(() => {});
+
     const ws = new BobbyWS(WS_URL);
     wsRef.current = ws;
 
@@ -95,6 +101,8 @@ export default function App() {
         }
         setFading(false);
         setVisible(true);
+        // Let mouse events reach the orb while it's visible
+        appWindow.setIgnoreCursorEvents(false).catch(() => {});
       } else {
         // Start gray fade immediately; slide out after HIDE_DELAY
         setFading(true);
@@ -102,6 +110,8 @@ export default function App() {
           setVisible(false);
           setText('');
           hideTimer.current = null;
+          // Pass all mouse events through the window when orb is hidden
+          appWindow.setIgnoreCursorEvents(true).catch(() => {});
         }, HIDE_DELAY);
       }
     });
