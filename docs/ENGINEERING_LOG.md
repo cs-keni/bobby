@@ -12,7 +12,7 @@ Added `_discover_start_menu_apps()` in `os_control.py`: scans both system (`Prog
 
 This means any shortcut in the user's Start Menu is automatically available by filename. `Genshin.lnk` → `"genshin"` key → `C:\\Users\\nguye\\AppData\\Roaming\\...\\Genshin.lnk` → launched via `cmd.exe /c start "" "<path>"`. No manual APP_MAP entry needed.
 
-Commit hash: (pending)
+Commit hash: b24ac4b
 
 ---
 
