@@ -256,19 +256,47 @@ html, body, #root {
   93%  { border-radius: 46% 54% 58% 42% / 52% 48% 44% 56%; }
 }
 
-/* ── Listening ring ─────────────────────────────────────────────────── */
+/* ── Listening — organic wave rings radiating outward from the orb ──── */
 
+/* Rings are siblings of .orb (not children), so they escape overflow:hidden
+   and can expand freely past the orb boundary into the sparkle field.
+   Centered on the orb via absolute positioning from .orb-glow-ring. */
 .listening-ring {
-  width: 30px;
-  height: 30px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  margin-top: -26px;
+  margin-left: -26px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.82);
-  animation: ring-expand 1.6s ease-out infinite;
+  border: 1.5px solid hsla(var(--orb-h), 90%, 84%, 0.72);
+  pointer-events: none;
+  animation: blob-ring-wave 1.8s ease-out infinite;
 }
 
-@keyframes ring-expand {
-  0%   { transform: scale(0.5); opacity: 0.9; }
-  100% { transform: scale(1.9); opacity: 0; }
+@keyframes blob-ring-wave {
+  0% {
+    transform: scale(0.35);
+    border-radius: 50%;
+    opacity: 0.88;
+  }
+  20% {
+    border-radius: 54% 46% 50% 50% / 46% 54% 50% 50%;
+  }
+  50% {
+    border-radius: 46% 54% 52% 48% / 55% 45% 48% 52%;
+    opacity: 0.45;
+  }
+  80% {
+    border-radius: 52% 48% 46% 54% / 48% 52% 54% 46%;
+    opacity: 0.18;
+  }
+  100% {
+    transform: scale(2.1);
+    border-radius: 50%;
+    opacity: 0;
+  }
 }
 
 /* ── Thinking spinner ───────────────────────────────────────────────── */

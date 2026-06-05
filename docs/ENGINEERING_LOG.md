@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-06-05 — fix: listening ring — 3 organic wave rings outside orb (Claude Sonnet 4.6)
+
+**Root cause**: `.listening-ring` was a child of `.orb` which has `overflow: hidden` on a 52px circle. The ring expanded (scale 0.5→1.9) but got clipped against the orb's circular boundary, making it look like a loading spinner being squished.
+
+**Fix**: moved ring rendering to `ListeningRings` component, rendered as a sibling of `.orb` inside `.orb-glow-ring` (no overflow: hidden). Three rings with delays 0s / -0.6s / -1.2s give continuous staggered ripples. Each ring starts at scale 0.35, expands to scale 2.1, and fades out. Border-radius morphs through 4 keyframes as the ring grows, giving the slight organic wobble rather than a perfect geometric circle.
+
+Ring color uses `hsla(var(--orb-h), ...)` so it inherits the listening blue automatically.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — fix: orb right-clip + Obsidian open_app (Claude Sonnet 4.6)
 
 **Orb right-clip** — Tauri window is 220px wide, orb at `right: 16px` placed the orb center 42px from the right window edge. The largest orbit blob (48px radius + 4.5px half-size = 52.5px right reach) exceeded that, getting clipped. Fixed by bumping `right: 16px → 36px` (gives 62px clearance, all blobs fit).
