@@ -22,7 +22,7 @@ The `orb--idle` CSS class overrode `background` to `rgba(70,70,88,0.38)` immedia
 - Far glow: saturation `80% → 90%`, alpha `0.22 → 0.38`
 - Aura: saturation `88% → 96%`, alpha `0.40 → 0.55`
 
-Commit hash: (pending)
+Commit hash: 1194bb5
 
 ---
 
