@@ -109,56 +109,6 @@ try {
 """
 
 
-# After VOICE_CHANNEL_SELECT navigates Discord to the voice channel, Discord shows
-# a "Join Voice" button. We click it by reading the actual Discord window bounds and
-# clicking at the button's approximate center (sidebar=240px, button≈45% down).
-# Cursor is saved and restored so it doesn't appear to move to the user.
-_PS_CLICK_JOIN = r"""
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public class BobbyUI {
-    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-    [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
-    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
-    [DllImport("user32.dll")] public static extern void mouse_event(uint f, int dx, int dy, uint d, int e);
-    [StructLayout(LayoutKind.Sequential)] public struct RECT  { public int left,top,right,bottom; }
-    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int x,y; }
-}
-"@ -ErrorAction SilentlyContinue
-
-$disc = Get-Process discord -ErrorAction SilentlyContinue |
-    Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
-if (-not $disc) { Write-Output "NO_DISCORD"; exit }
-
-$rect = New-Object BobbyUI+RECT
-[BobbyUI]::GetWindowRect($disc.MainWindowHandle, [ref]$rect) | Out-Null
-$w = $rect.right  - $rect.left
-$h = $rect.bottom - $rect.top
-
-$saved = New-Object BobbyUI+POINT
-[BobbyUI]::GetCursorPos([ref]$saved) | Out-Null
-
-# "Join Voice" button: horizontally centered in main content (right of sidebar),
-# vertically ~45% down (button sits near center in empty channel view).
-$SIDEBAR = 240
-$cx = [int]($rect.left + $SIDEBAR + ($w - $SIDEBAR) / 2)
-$cy = [int]($rect.top  + $h * 0.45)
-
-[BobbyUI]::SetForegroundWindow($disc.MainWindowHandle) | Out-Null
-Start-Sleep -Milliseconds 400
-[BobbyUI]::SetCursorPos($cx, $cy) | Out-Null
-Start-Sleep -Milliseconds 60
-[BobbyUI]::mouse_event(2, 0, 0, 0, 0)
-Start-Sleep -Milliseconds 40
-[BobbyUI]::mouse_event(4, 0, 0, 0, 0)
-Start-Sleep -Milliseconds 100
-[BobbyUI]::SetCursorPos($saved.x, $saved.y) | Out-Null
-Write-Output "CLICKED:$cx,$cy"
-"""
-
-
 def _ps(script: str, timeout: int = 15) -> tuple[int, str]:
     exe = "powershell.exe" if sys.platform != "win32" else "powershell"
     r = subprocess.run(
@@ -251,20 +201,6 @@ def _try_join(client_id: str, access_token: str, channel_id: str) -> str:
     return out
 
 
-def _click_join_voice_button() -> None:
-    """
-    After VOICE_CHANNEL_SELECT, Discord shows the voice channel with a 'Join Voice' button
-    but does not auto-join. Click it via cursor simulation (cursor is saved and restored).
-    """
-    import time
-    time.sleep(0.8)  # wait for Discord to render the join view
-    try:
-        _, out = _ps(_PS_CLICK_JOIN, timeout=5)
-        log.info(f"Discord join-click: {out.strip()}")
-    except Exception as e:
-        log.warning(f"Discord join-click failed: {e}")
-
-
 def join_voice(channel_id: str, channel_name: str) -> ToolResult:
     """
     Join a Discord voice channel via the local IPC protocol.
@@ -294,9 +230,8 @@ def join_voice(channel_id: str, channel_name: str) -> ToolResult:
     if token and token.get("access_token"):
         out = _try_join(client_id, token["access_token"], channel_id)
         if "OK:" in out:
-            _click_join_voice_button()
-            log.info(f"Discord RPC: joined #{channel_name}")
-            return ToolResult(success=True, message=f"Joined #{channel_name}.")
+            log.info(f"Discord RPC: navigated to #{channel_name}")
+            return ToolResult(success=True, message=f"Discord is showing #{channel_name} — click Join Voice to hop in.")
         if "AUTH_FAILED" in out and token.get("refresh_token"):
             log.info("Discord RPC: token expired, refreshing")
             new_tok = _refresh_token(client_id, client_secret, token["refresh_token"])
@@ -304,9 +239,8 @@ def join_voice(channel_id: str, channel_name: str) -> ToolResult:
                 _save_token(new_tok)
                 out = _try_join(client_id, new_tok["access_token"], channel_id)
                 if "OK:" in out:
-                    _click_join_voice_button()
-                    log.info(f"Discord RPC: joined #{channel_name} (refreshed)")
-                    return ToolResult(success=True, message=f"Joined #{channel_name}.")
+                    log.info(f"Discord RPC: navigated to #{channel_name} (refreshed)")
+                    return ToolResult(success=True, message=f"Discord is showing #{channel_name} — click Join Voice to hop in.")
 
     # First-time: launch AUTHORIZE — Discord shows a one-time popup
     log.info("Discord RPC: starting first-time OAuth2 authorization")
@@ -335,9 +269,8 @@ def join_voice(channel_id: str, channel_name: str) -> ToolResult:
     _save_token(token)
     out = _try_join(client_id, token["access_token"], channel_id)
     if "OK:" in out:
-        _click_join_voice_button()
-        log.info(f"Discord RPC: joined #{channel_name} (first auth complete)")
-        return ToolResult(success=True, message=f"Joined #{channel_name}.")
+        log.info(f"Discord RPC: navigated to #{channel_name} (first auth complete)")
+        return ToolResult(success=True, message=f"Discord is showing #{channel_name} — click Join Voice to hop in.")
 
     return ToolResult(
         success=False,

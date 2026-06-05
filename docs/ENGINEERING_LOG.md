@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-06-05 — fix: remove click fallback from discord_rpc + honest voice-join messages (Claude Sonnet 4.6)
+
+**Problem**: `discord_rpc.join_voice()` previously had a `_click_join_voice_button()` fallback that used hardcoded mouse coordinates to click Discord's "Join Voice" button after navigating. This was rejected as too fragile and dependent on window position.
+
+**Fix**: Removed `_click_join_voice_button()` entirely (function + call sites + `_PS_CLICK_JOIN` constant). Updated all three success-return paths to use an honest message: `"Discord is showing #sex-havers — click Join Voice to hop in."` rather than the misleading `"Joined #sex-havers."` The tool navigates Discord to the voice channel via RPC; the user clicks Join Voice themselves.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — feat: discord voice auto-join via local IPC/RPC (Claude Sonnet 4.6)
 
 **Problem**: Neither URI scheme nor Windows UI Automation can auto-join Discord voice. URI scheme navigates but doesn't join. Discord's Electron app doesn't expose "Join Voice" in its accessibility tree (BUTTON_NOT_FOUND confirmed in testing).
@@ -18,7 +28,7 @@ Requires user to create a Discord Developer Application and add `discord.app_id`
 
 Previous UI Automation approach removed from `discord.py` (replaced by RPC import).
 
-Commit hash: (pending)
+Commit hash: d435f5e
 
 ---
 
