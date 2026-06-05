@@ -17,6 +17,7 @@ Click Authorize. Token is cached at ~/.bobby/discord_token.json and auto-refresh
 import json
 import sys
 import subprocess
+import urllib.error
 import urllib.request
 import urllib.parse
 from pathlib import Path
@@ -93,9 +94,10 @@ try {
     Write-Frame $pipe 1 @{
         cmd   = "AUTHORIZE"
         args  = @{
-            client_id = $cid
-            scopes    = @("rpc", "rpc.voice.read", "rpc.voice.write")
-            prompt    = "none"
+            client_id    = $cid
+            scopes       = @("rpc")
+            redirect_uri = "http://127.0.0.1"
+            prompt       = "none"
         }
         nonce = [guid]::NewGuid().ToString()
     }
@@ -163,8 +165,12 @@ def _token_post(params: dict) -> dict | None:
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")
+        log.error(f"Discord token HTTP {e.code}: {detail}")
+        return None
     except Exception as e:
-        log.error(f"Discord token exchange HTTP error: {e}")
+        log.error(f"Discord token exchange error: {e}")
         return None
 
 
