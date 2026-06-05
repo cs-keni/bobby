@@ -158,7 +158,11 @@ def _token_post(params: dict) -> dict | None:
     req = urllib.request.Request(
         "https://discord.com/api/oauth2/token",
         data=body,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            # Cloudflare blocks Python-urllib; Discord API requires this UA format.
+            "User-Agent": "DiscordBot (https://github.com/cs-keni/bobby, 1.0)",
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
