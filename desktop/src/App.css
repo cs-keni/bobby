@@ -256,46 +256,39 @@ html, body, #root {
   93%  { border-radius: 46% 54% 58% 42% / 52% 48% 44% 56%; }
 }
 
-/* ── Listening — organic wave rings radiating outward from the orb ──── */
+/* ── Listening dots — three-dot bounce indicator inside the orb ─────── */
 
-/* Rings are siblings of .orb (not children), so they escape overflow:hidden
-   and can expand freely past the orb boundary into the sparkle field.
-   Centered on the orb via absolute positioning from .orb-glow-ring. */
-.listening-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 52px;
-  height: 52px;
-  margin-top: -26px;
-  margin-left: -26px;
-  border-radius: 50%;
-  border: 1.5px solid hsla(var(--orb-h), 90%, 84%, 0.72);
-  pointer-events: none;
-  animation: blob-ring-wave 1.8s ease-out infinite;
+.listening-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-@keyframes blob-ring-wave {
-  0% {
-    transform: scale(0.35);
-    border-radius: 50%;
+.listening-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.55);
+  animation: dot-bounce 1.0s ease-in-out infinite;
+  opacity: 0.65;
+}
+
+.listening-dot:nth-child(2) { animation-delay: 0.18s; }
+.listening-dot:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes dot-bounce {
+  0%, 100% {
+    transform: translateY(0)   scale(0.9);
+    opacity: 0.60;
+  }
+  40% {
+    transform: translateY(-7px) scale(1.18);
+    opacity: 1;
+  }
+  65% {
+    transform: translateY(-4px) scale(1.05);
     opacity: 0.88;
-  }
-  20% {
-    border-radius: 54% 46% 50% 50% / 46% 54% 50% 50%;
-  }
-  50% {
-    border-radius: 46% 54% 52% 48% / 55% 45% 48% 52%;
-    opacity: 0.45;
-  }
-  80% {
-    border-radius: 52% 48% 46% 54% / 48% 52% 54% 46%;
-    opacity: 0.18;
-  }
-  100% {
-    transform: scale(2.1);
-    border-radius: 50%;
-    opacity: 0;
   }
 }
 

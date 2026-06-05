@@ -103,21 +103,20 @@ function Waveform() {
   );
 }
 
-// Three staggered rings render as siblings of the orb so they can expand
-// beyond the orb's overflow:hidden boundary into the sparkle field.
-function ListeningRings() {
+function ListeningDots() {
   return (
-    <>
-      <div className="listening-ring" />
-      <div className="listening-ring" style={{ animationDelay: '-0.6s' }} />
-      <div className="listening-ring" style={{ animationDelay: '-1.2s' }} />
-    </>
+    <div className="listening-dots">
+      <div className="listening-dot" />
+      <div className="listening-dot" />
+      <div className="listening-dot" />
+    </div>
   );
 }
 
 function OrbIcon({ state }: { state: BobbyState }) {
   if (state === 'speaking') return <Waveform />;
   if (state === 'thinking') return <div className="thinking-ring" />;
+  if (state === 'listening') return <ListeningDots />;
   return null;
 }
 
@@ -172,7 +171,6 @@ export default function App() {
       <div className={`orb-glow-ring orb-glow-ring--${displayState}`}>
         <SparkleField />
         <OrbitBlobs />
-        {state === 'listening' && <ListeningRings />}
         <div className={`orb orb--${displayState}`}>
           <OrbIcon state={state} />
         </div>

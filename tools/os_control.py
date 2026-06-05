@@ -60,9 +60,59 @@ APP_MAP: dict[str, str] = {
 }
 
 
+_start_menu_cache: dict[str, str] | None = None
+
+
+def _discover_start_menu_apps() -> dict[str, str]:
+    """Scan Windows Start Menu .lnk shortcuts → {lowercase-name: windows-path}.
+
+    Covers both system-wide (ProgramData) and per-user (AppData\\Roaming) dirs.
+    Result is cached for the lifetime of the process (rescan requires restart).
+    """
+    global _start_menu_cache
+    if _start_menu_cache is not None:
+        return _start_menu_cache
+
+    import glob as _glob
+
+    on_wsl = _is_wsl()
+    on_win = sys.platform == "win32"
+
+    if on_wsl:
+        dirs = [
+            "/mnt/c/ProgramData/Microsoft/Windows/Start Menu/Programs",
+            "/mnt/c/Users/*/AppData/Roaming/Microsoft/Windows/Start Menu/Programs",
+        ]
+    elif on_win:
+        dirs = [
+            os.path.expandvars(r"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs"),
+            os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs"),
+        ]
+    else:
+        _start_menu_cache = {}
+        return {}
+
+    discovered: dict[str, str] = {}
+    for pattern in dirs:
+        for base in _glob.glob(pattern):
+            for root, _, files in os.walk(base):
+                for fname in files:
+                    if not fname.lower().endswith(".lnk"):
+                        continue
+                    full = os.path.join(root, fname)
+                    key = fname[:-4].lower()  # strip .lnk, normalize to lowercase
+                    win_path = full.replace("/mnt/c", "C:").replace("/", "\\") if on_wsl else full
+                    discovered[key] = win_path
+
+    _start_menu_cache = discovered
+    log.debug(f"Start Menu discovery: {len(discovered)} shortcuts indexed")
+    return _start_menu_cache
+
+
 def _get_app_map() -> dict[str, str]:
-    """Return APP_MAP merged with any app_aliases from config.yaml."""
-    merged = dict(APP_MAP)
+    """Return merged app map: Start Menu discoveries < APP_MAP < config overrides."""
+    # Start Menu has lowest priority so hardcoded entries (e.g. obsidian://) win
+    merged = {**_discover_start_menu_apps(), **APP_MAP}
     overrides = config.get("app_aliases", {})
     if isinstance(overrides, dict):
         merged.update({k.lower(): v for k, v in overrides.items()})

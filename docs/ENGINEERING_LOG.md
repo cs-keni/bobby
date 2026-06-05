@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-06-05 — feat: listening dots + Start Menu auto-discovery (Claude Sonnet 4.6)
+
+**Listening indicator → 3 bouncing dots**
+Replaced wave rings with `ListeningDots` component: 3 white dots in a horizontal row inside the orb. Animation: bounce up (-7px), slight overshoot, settle, fall. Scale 0.9→1.18 + opacity 0.6→1 at peak gives a glowing quality. Staggered delays (0s / 0.18s / 0.36s) create a rolling left-to-right wave. Moved back inside `OrbIcon` / `.orb` where it belongs.
+
+**Start Menu auto-discovery in `open_app`**
+Added `_discover_start_menu_apps()` in `os_control.py`: scans both system (`ProgramData`) and per-user (`AppData\\Roaming`) Start Menu Program directories for `.lnk` shortcuts. Result cached for process lifetime. Merged into `_get_app_map()` at lowest priority — hardcoded APP_MAP and config overrides win.
+
+This means any shortcut in the user's Start Menu is automatically available by filename. `Genshin.lnk` → `"genshin"` key → `C:\\Users\\nguye\\AppData\\Roaming\\...\\Genshin.lnk` → launched via `cmd.exe /c start "" "<path>"`. No manual APP_MAP entry needed.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — fix: listening ring — 3 organic wave rings outside orb (Claude Sonnet 4.6)
 
 **Root cause**: `.listening-ring` was a child of `.orb` which has `overflow: hidden` on a 52px circle. The ring expanded (scale 0.5→1.9) but got clipped against the orb's circular boundary, making it look like a loading spinner being squished.
