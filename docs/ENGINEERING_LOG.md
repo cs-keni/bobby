@@ -29,7 +29,7 @@ Orb redesign based on Asha blob reference (Genshin Impact / Natlan). Key changes
 ### Ambient aura
 - `::before` on `.orb-glow-ring`: soft radial glow (not a structured ring), pulses with `@keyframes aura-pulse`
 
-Commit hash: (pending)
+Commit hash: e8659b8
 
 ---
 
