@@ -10,7 +10,7 @@
 
 Ring color uses `hsla(var(--orb-h), ...)` so it inherits the listening blue automatically.
 
-Commit hash: (pending)
+Commit hash: d15dbe4
 
 ---
 
