@@ -36,6 +36,11 @@ phone/node_modules/
 phone/dist/
 phone/.next/
 
+# Tauri desktop app
+desktop/node_modules/
+desktop/target/
+desktop/dist/
+
 # Config with secrets (keep config.yaml.example, not config.yaml)
 config.yaml
 .gbrain-source

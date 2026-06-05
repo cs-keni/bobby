@@ -622,7 +622,7 @@ Architecture locked by `/plan-eng-review` + Codex outside voice on 2026-06-04. T
 
 ### UI-B — Tauri Desktop Panel
 
-- [ ] **T6** *(Windows terminal)* — Scaffold Tauri at `desktop/`. `cargo install tauri-cli`, `npm create tauri-app@latest desktop -- --template react-ts`. Add `desktop/target/` + `desktop/node_modules/` to `.gitignore`.
+- [x] **T6** *(Windows terminal)* — Scaffold Tauri at `desktop/`. Port changed to 3000 (1333–1432 reserved by Hyper-V/WSL2). Defender exclusions added for `.cargo`, `.rustup`, `target/`. Window opens with "Welcome to Tauri + React". `.gitignore` updated.
 - [ ] **T7** — Full Tauri React panel: tray icon (`tauri-plugin-tray`), always-on-top frameless side panel, WS client (`desktop/src/ws.ts`) with exponential backoff reconnect, state-driven rendering (idle/listening/thinking/speaking), 300ms spring slide-in/out, Bobby orb with state pulse, response text + transcript scroll.
 - [ ] **T8** — CSS sine-curve waveform on speaking state. `tauri-plugin-window-vibrancy` for Mica blur. Conversation history scroll. Text input fallback.
 
@@ -652,7 +652,7 @@ Architecture locked by `/plan-eng-review` + Codex outside voice on 2026-06-04. T
 - [ ] Phase 9 — Screen Awareness
 - [ ] Phase 10 — Polish & Daily Driver
 - [~] Phase 11 — Second Brain (Obsidian) — Phase A shipped (fd1b2b1); Phase B-RAG shipped (Recall@5 100%); Phase B remaining (auto-session-capture, morning brief); Phase C scaffolded (needs Kenny to trigger first profile build + E2E test)
-- [~] Phase 12 — Desktop UI (Tauri) — UI-A fully complete (T1–T5 + T4 manual verified 2026-06-04); T6–T8 Tauri scaffold + panel not started
+- [~] Phase 12 — Desktop UI (Tauri) — UI-A fully complete; T6 scaffold working (Defender exclusions + port 3000); T7–T8 panel build not started
 
 ---
 
