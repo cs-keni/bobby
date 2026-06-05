@@ -10,7 +10,7 @@
 
 **Voice channel + screenshare scaffold**: Added `default_voice_channel`, `screenshare_keybind`, and a placeholder `general` voice channel entry to `config.yaml`. User still needs to: (1) enable Discord Developer Mode, (2) copy their voice channel ID into config, (3) set a custom "Toggle Screenshare" keybind in Discord and paste it into `screenshare_keybind`.
 
-Commit hash: (pending)
+Commit hash: 8340338
 
 ---
 

@@ -144,11 +144,11 @@ def _resolve_server_channel(
     name="discord_navigate",
     description=(
         "Open or navigate to a Discord server and channel. "
-        "Use this — not open_app — when the user says 'open discord', 'go to discord', "
-        "'join the call', or any Discord navigation intent. "
-        "Call with no arguments to jump to your default server and channel (set in config). "
-        "For voice channels, pass the channel name; Discord will show the channel so the user can join. "
-        "Use friendly names you've configured — e.g. 'bubble butt bottom bois' and 'sex-havers'."
+        "Use this — not open_app — for any Discord navigation intent. "
+        "• 'open discord' / 'go to discord' → call with no arguments (default text channel). "
+        "• 'join the call' / 'join voice' → set voice=true (default voice channel). "
+        "• Specific channel → pass the channel name explicitly. "
+        "Use friendly names: server='bubble butt bottom bois', channel='general' or 'sex-havers'."
     ),
     parameters={
         "server": {
@@ -157,15 +157,20 @@ def _resolve_server_channel(
         },
         "channel": {
             "type": "string",
-            "description": "Channel name as configured in config.yaml. Defaults to discord.default_channel.",
+            "description": "Channel name. Defaults to discord.default_channel (text) or discord.default_voice_channel when voice=true.",
+        },
+        "voice": {
+            "type": "boolean",
+            "description": "Set true when the user wants to join a voice call — switches the channel default to discord.default_voice_channel.",
         },
     },
 )
-def discord_navigate(server: str = "", channel: str = "") -> ToolResult:
+def discord_navigate(server: str = "", channel: str = "", voice: bool = False) -> ToolResult:
     if not server:
         server = config.get("discord.default_server", "")
     if not channel:
-        channel = config.get("discord.default_channel", "")
+        default_key = "discord.default_voice_channel" if voice else "discord.default_channel"
+        channel = config.get(default_key, "")
 
     if not server or not channel:
         return ToolResult(
