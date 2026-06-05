@@ -1,14 +1,14 @@
 # Bobby — Handoff
 
-## Last Updated: 2026-06-04 (Claude Sonnet 4.6 — Phase 12 T6+T7 Tauri orb)
+## Last Updated: 2026-06-04 (Claude Sonnet 4.6 — Phase 12 orb v3 sparkles + jelly)
 
 ---
 
 ## Current State
 
-**HEAD is `caa2745`. T6+T7 orb changes staged, not yet committed. 259 tests passing, 1 skipped.**
+**HEAD is `c38bf1f`. Orb v3 changes pending commit. 259 tests passing, 1 skipped.**
 
-Phase 12 WS backend is complete (`caa2745`). T6 Tauri scaffold is working (Defender exclusions, port 3000, right-edge positioning). T7 orb UI v2 is implemented with `@property` hue transitions + rotating Siri-style flare corona. Volume defaulted to 50%. T8 (Mica blur, tray icon, transcript scroll) remains.
+Phase 12 WS backend complete. T6 scaffold done. T7 orb v3: sparkle particle field replaces conic rings; 3D multi-layer jelly sphere gradient; fade-to-gray before hide. T8 (Mica blur, tray, transcript) remains.
 
 ---
 

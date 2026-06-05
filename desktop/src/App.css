@@ -12,22 +12,17 @@ html, body, #root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* ── Registered custom properties ──────────────────────────────────────
-   Declaring --orb-h as <number> lets CSS transition through intermediate
-   hues instead of jumping between them. Without @property, custom props
-   can't be interpolated — the browser would snap on every state change.
+/* ── Registered custom property ────────────────────────────────────────
+   inherits: true  → children (.orb, sparkles) automatically inherit the
+   hue from .orb-glow-ring, so one transition drives everything.
+   syntax: '<number>' → browser can interpolate between values instead
+   of snapping. Without @property, var() properties are opaque strings.
 ──────────────────────────────────────────────────────────────────────── */
 
 @property --orb-h {
   syntax: '<number>';
   initial-value: 220;
-  inherits: false;
-}
-
-@property --flare-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
+  inherits: true;
 }
 
 /* ── Slide wrapper ──────────────────────────────────────────────────── */
@@ -42,11 +37,10 @@ html, body, #root {
   gap: 10px;
   pointer-events: none;
 
-  /* Hidden state: off-screen AND invisible */
   opacity: 0;
-  transform: translateY(-50%) translateX(calc(100% + 32px));
+  transform: translateY(-50%) translateX(calc(100% + 40px));
   transition:
-    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.3s ease;
 }
 
@@ -56,83 +50,141 @@ html, body, #root {
   pointer-events: auto;
 }
 
-/* ── Glow ring — corona/flare lives here ────────────────────────────────
-   Wraps the orb so ::before can overflow without being clipped.
-   The orb itself has overflow: hidden for inner content (waveform bars).
-──────────────────────────────────────────────────────────────────────── */
+/* ── Fade-to-gray state ─────────────────────────────────────────────── */
+
+.orb-wrapper.fading .orb-glow-ring {
+  filter: saturate(0.04) brightness(0.45) blur(0.5px);
+}
+
+.orb-wrapper.fading .sparkle-field {
+  opacity: 0;
+}
+
+.orb-wrapper.fading .orb-glow-ring::before {
+  opacity: 0;
+}
+
+.orb-wrapper.fading .orb-text {
+  opacity: 0;
+}
+
+/* ── Glow ring — sparkle field lives here ───────────────────────────── */
 
 .orb-glow-ring {
   position: relative;
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  /* Hue transitions smoothly via @property */
+
   --orb-h: 220;
-  transition: --orb-h 0.75s ease;
+  transition: --orb-h 0.75s ease, filter 0.9s ease;
+  filter: saturate(1) brightness(1);
 }
 
-/* State hues */
-.orb-glow-ring--idle     { --orb-h: 240; }
+/* State hues — hue transitions smoothly via @property */
+.orb-glow-ring--idle      { --orb-h: 220; }
 .orb-glow-ring--listening { --orb-h: 217; }
 .orb-glow-ring--thinking  { --orb-h: 38;  }
 .orb-glow-ring--speaking  { --orb-h: 160; }
 
-/* ── Siri-style rotating flare corona ───────────────────────────────────
-   A conic gradient that rotates continuously, creating the "rainbow halo"
-   effect. Sized larger than the orb so it bleeds out organically.
-   mix-blend-mode: screen makes it glow instead of paste on top.
-──────────────────────────────────────────────────────────────────────── */
+/* Float animation when active */
+.orb-glow-ring--listening,
+.orb-glow-ring--thinking,
+.orb-glow-ring--speaking {
+  animation: orb-float 2.5s ease-in-out infinite;
+}
+
+/* ── Ambient aura — soft glow behind the orb (not a ring) ───────────── */
 
 .orb-glow-ring::before {
   content: '';
   position: absolute;
   inset: -18px;
   border-radius: 50%;
-  background: conic-gradient(
-    from var(--flare-angle),
-    hsla(calc(var(--orb-h) - 40), 85%, 65%, 0.0),
-    hsla(calc(var(--orb-h) - 20), 90%, 70%, 0.55),
-    hsla(var(--orb-h),            95%, 72%, 0.7),
-    hsla(calc(var(--orb-h) + 30), 90%, 68%, 0.45),
-    hsla(calc(var(--orb-h) + 60), 80%, 65%, 0.2),
-    hsla(calc(var(--orb-h) + 90), 75%, 60%, 0.0),
-    hsla(calc(var(--orb-h) - 40), 85%, 65%, 0.0)
+  background: radial-gradient(
+    circle at 50% 50%,
+    hsla(var(--orb-h), 88%, 65%, 0.40) 0%,
+    hsla(var(--orb-h), 82%, 60%, 0.18) 45%,
+    transparent 72%
   );
-  mask-image: radial-gradient(
-    ellipse at center,
-    transparent 40%,
-    rgba(0,0,0,0.6) 60%,
-    rgba(0,0,0,0.9) 75%,
-    transparent 100%
-  );
-  -webkit-mask-image: radial-gradient(
-    ellipse at center,
-    transparent 40%,
-    rgba(0,0,0,0.6) 60%,
-    rgba(0,0,0,0.9) 75%,
-    transparent 100%
-  );
-  animation: flare-rotate 4s linear infinite;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.6s ease, --orb-h 0.75s ease;
-  /* Flare shares the hue variable from parent */
-  --orb-h: inherit;
+  transition: opacity 0.7s ease;
+  animation: aura-pulse 3s ease-in-out infinite;
 }
 
-/* Only show the flare when Bobby is active */
 .orb-glow-ring--listening::before,
 .orb-glow-ring--thinking::before,
 .orb-glow-ring--speaking::before {
   opacity: 1;
 }
 
-@keyframes flare-rotate {
-  from { --flare-angle: 0deg; }
-  to   { --flare-angle: 360deg; }
+@keyframes aura-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%       { transform: scale(1.12); opacity: 0.5;  }
 }
 
-/* ── Orb base ───────────────────────────────────────────────────────── */
+/* ── Sparkle field — orbiting firefly particles ──────────────────────── */
+
+.sparkle-field {
+  position: absolute;
+  inset: -24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.65s ease;
+}
+
+.orb-glow-ring--listening .sparkle-field,
+.orb-glow-ring--thinking  .sparkle-field,
+.orb-glow-ring--speaking  .sparkle-field {
+  opacity: 1;
+}
+
+.sparkle {
+  position: absolute;
+
+  /* Center on origin; margin centering via --sw custom prop */
+  top: 50%;
+  left: 50%;
+  width: var(--sw, 3px);
+  height: var(--sw, 3px);
+  margin-top:  calc(var(--sw, 3px) / -2);
+  margin-left: calc(var(--sw, 3px) / -2);
+
+  border-radius: 50%;
+
+  /* Hue-shifted soft dot with outer glow */
+  background: radial-gradient(
+    circle at 40% 35%,
+    hsl(calc(var(--orb-h) + var(--dh, 0)), 96%, 92%) 0%,
+    hsla(calc(var(--orb-h) + var(--dh, 0)), 90%, 72%, 0) 100%
+  );
+  box-shadow:
+    0 0 5px 2px hsla(calc(var(--orb-h) + var(--dh, 0)), 92%, 76%, 0.85),
+    0 0 10px 3px hsla(calc(var(--orb-h) + var(--dh, 0)), 88%, 68%, 0.4);
+
+  /* Two animations: orbit path + depth fade (same delay applied to both via JS) */
+  animation:
+    sparkle-orbit var(--sdur, 3.5s) linear infinite,
+    sparkle-depth var(--sdur, 3.5s) ease-in-out infinite;
+}
+
+/* Elliptical orbit in a tilted 3D plane.
+   rotateX + rotateY tilts the orbital plane; rotateZ sweeps the orbit;
+   translateX places the sparkle at orbital radius from center. */
+@keyframes sparkle-orbit {
+  from { transform: rotateX(var(--sx, 0deg)) rotateY(var(--sy, 0deg)) rotateZ(0deg)   translateX(var(--sr, 32px)); }
+  to   { transform: rotateX(var(--sx, 0deg)) rotateY(var(--sy, 0deg)) rotateZ(360deg) translateX(var(--sr, 32px)); }
+}
+
+/* Simulates going behind the orb: bright at front (0%), dim at back (50%) */
+@keyframes sparkle-depth {
+  0%   { opacity: 0.95; }
+  50%  { opacity: 0.10; }
+  100% { opacity: 0.95; }
+}
+
+/* ── Orb body — multi-layer jelly sphere ────────────────────────────── */
 
 .orb {
   width: 52px;
@@ -143,82 +195,113 @@ html, body, #root {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  /* Color transitions use the inherited hue */
-  background: radial-gradient(
-    circle at 38% 38%,
-    hsl(calc(var(--orb-h) + 30), 90%, 78%),
-    hsl(var(--orb-h), 80%, 55%) 55%,
-    hsl(calc(var(--orb-h) - 15), 75%, 42%)
-  );
+
+  /* Three gradient layers create a convincing 3D jelly/sphere look:
+     1. Sharp specular highlight (top-left light source)
+     2. Warm rim light (bottom-right, simulated bounce light)
+     3. Main body gradient (bright core → deep dark edge) */
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255,255,255,0.92) 0%, transparent 30%),
+    radial-gradient(circle at 74% 80%, hsla(calc(var(--orb-h)+28), 78%, 72%, 0.5) 0%, transparent 50%),
+    radial-gradient(circle at 42% 38%,
+      hsl(calc(var(--orb-h)+38), 96%, 84%)  0%,
+      hsl(var(--orb-h),           82%, 58%) 42%,
+      hsl(calc(var(--orb-h)-16),  76%, 40%) 72%,
+      hsl(calc(var(--orb-h)-30),  68%, 26%) 100%
+    );
+
+  /* Outer glow + ground shadow + inset depth for translucency/jelly */
   box-shadow:
-    0 0 0px 0px hsla(var(--orb-h), 80%, 60%, 0),
-    0 0 24px    hsla(var(--orb-h), 80%, 60%, 0.5),
-    0 4px 12px  rgba(0, 0, 0, 0.3);
+    0 0 20px    hsla(var(--orb-h), 84%, 62%, 0.6),
+    0 0 40px    hsla(var(--orb-h), 80%, 58%, 0.22),
+    0 8px 18px  rgba(0, 0, 0, 0.38),
+    inset 0 -9px 18px hsla(calc(var(--orb-h)-22), 80%, 28%, 0.52),
+    inset 0  5px 10px rgba(255, 255, 255, 0.22);
+
   transition:
     background 0.75s ease,
     box-shadow 0.75s ease;
 }
 
-/* ── Idle (shouldn't normally be visible, but just in case) ─────────── */
-
 .orb--idle {
-  background: rgba(80, 80, 100, 0.4);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+  background: rgba(70, 70, 88, 0.38);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
 }
 
-/* ── Per-state animations ───────────────────────────────────────────── */
-
+/* Different squish speeds per state give each state its own personality */
 .orb--listening {
-  animation: orb-breathe 2s ease-in-out infinite, blob-morph 5s ease-in-out infinite;
+  animation: orb-squish 2.5s ease-in-out infinite, blob-morph 4.0s ease-in-out infinite;
 }
 
 .orb--thinking {
-  animation: blob-morph 3s ease-in-out infinite;
+  animation: orb-squish 3.2s ease-in-out infinite, blob-morph 3.5s ease-in-out infinite;
 }
 
 .orb--speaking {
-  animation: blob-morph 2.5s ease-in-out infinite;
+  animation: orb-squish 1.8s ease-in-out infinite, blob-morph 2.2s ease-in-out infinite;
 }
 
-/* ── Organic blob morph (makes it feel alive) ───────────────────────── */
+/* ── Float — the whole ring (orb + sparkles) bobs up and down ────────── */
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px); }
+  45%       { transform: translateY(-7px); }
+  80%       { transform: translateY(1.5px); }
+}
+
+/* ── Squash and stretch — exaggerated, synchronized with float ────────
+   Timings are tuned to match the float arc:
+   - 18% (stretch): orb is rising (matches float 0%→45% upswing)
+   - 44% (apex):    orb near float peak
+   - 82% (squash):  orb lands (matches float 80% micro-dip)
+──────────────────────────────────────────────────────────────────────── */
+
+@keyframes orb-squish {
+  0%   { transform: scaleX(1.01) scaleY(1.01) rotate( 0.0deg); }
+  18%  { transform: scaleX(0.86) scaleY(1.15) rotate( 2.5deg); }
+  44%  { transform: scaleX(0.92) scaleY(1.08) rotate(-1.5deg); }
+  62%  { transform: scaleX(0.96) scaleY(1.04) rotate( 0.5deg); }
+  82%  { transform: scaleX(1.22) scaleY(0.83) rotate(-1.0deg); }
+  91%  { transform: scaleX(0.94) scaleY(1.06) rotate( 1.8deg); }
+  96%  { transform: scaleX(1.03) scaleY(0.98) rotate(-0.5deg); }
+  100% { transform: scaleX(1.01) scaleY(1.01) rotate( 0.0deg); }
+}
+
+/* ── Blob morph — exaggerated border-radius wobble ──────────────────── */
 
 @keyframes blob-morph {
   0%, 100% { border-radius: 50%; }
-  20%  { border-radius: 48% 52% 56% 44% / 54% 46% 54% 46%; }
-  40%  { border-radius: 54% 46% 44% 56% / 46% 54% 46% 54%; }
-  60%  { border-radius: 44% 56% 50% 50% / 56% 44% 58% 42%; }
-  80%  { border-radius: 56% 44% 54% 46% / 44% 56% 44% 56%; }
-}
-
-/* ── Listening breathe pulse ────────────────────────────────────────── */
-
-@keyframes orb-breathe {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.08); }
+  10%  { border-radius: 40% 60% 66% 34% / 54% 42% 58% 46%; }
+  22%  { border-radius: 64% 36% 34% 66% / 36% 64% 36% 64%; }
+  38%  { border-radius: 34% 66% 60% 40% / 66% 34% 66% 34%; }
+  55%  { border-radius: 62% 38% 40% 60% / 38% 62% 38% 62%; }
+  70%  { border-radius: 42% 58% 68% 32% / 60% 40% 52% 48%; }
+  84%  { border-radius: 56% 44% 38% 62% / 44% 56% 64% 36%; }
+  93%  { border-radius: 46% 54% 58% 42% / 52% 48% 44% 56%; }
 }
 
 /* ── Listening ring ─────────────────────────────────────────────────── */
 
 .listening-ring {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.82);
   animation: ring-expand 1.6s ease-out infinite;
 }
 
 @keyframes ring-expand {
   0%   { transform: scale(0.5); opacity: 0.9; }
-  100% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
 }
 
 /* ── Thinking spinner ───────────────────────────────────────────────── */
 
 .thinking-ring {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 2.5px solid rgba(255, 255, 255, 0.15);
+  border: 2.5px solid rgba(255, 255, 255, 0.14);
   border-top-color: rgba(255, 255, 255, 0.95);
   border-right-color: rgba(255, 255, 255, 0.5);
   animation: spin 1s ease-in-out infinite;
@@ -240,7 +323,7 @@ html, body, #root {
 .waveform-bar {
   width: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.9);
   height: 3px;
   animation: wave-bar var(--dur, 0.8s) ease-in-out infinite;
 }
@@ -270,6 +353,7 @@ html, body, #root {
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
+  transition: opacity 0.5s ease;
 }
 
 @keyframes text-in {

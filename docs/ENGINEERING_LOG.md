@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-04 — Phase 12 orb v3: sparkle particles + 3D jelly sphere + fade-to-gray (Claude Sonnet 4.6)
+
+Orb redesign based on Asha blob reference (Genshin Impact / Natlan). Key changes:
+
+### Sparkle field (replaces conic gradient rings)
+- 8 `<div>` sparkle elements inside `.sparkle-field`, each orbiting in its own tilted 3D plane
+- Orbit trick: `rotateX(sx) rotateY(sy) rotateZ(angle) translateX(r)` — tilting the plane before sweeping produces elliptical orbits that read as 3D
+- `@keyframes sparkle-depth`: opacity 0.95→0.10→0.95 over one orbit, simulates passing behind the orb
+- Each sparkle has unique tilt angles, radius, size, duration, delay, and hue offset (`--dh`)
+- `@property --orb-h` changed to `inherits: true` so sparkles and orb body inherit the hue from `.orb-glow-ring` without needing explicit redeclaration
+
+### 3D jelly sphere
+- Orb body now uses 3 stacked radial-gradients: sharp specular highlight (top-left), rim light (bottom-right), main body (bright core → deep dark edge)
+- `inset` box-shadow for subsurface scattering illusion (translucency/jelly depth)
+- `orb-squish` keyframes: 8 stops with squash/stretch/rotate synchronized to the float arc timing. Squash peak at 82% (matches float dip at 80%)
+- `blob-morph` keyframes: 7 stops, more extreme border-radius swings
+- Float on `.orb-glow-ring` (translateY -7px), squish+blob on `.orb` — no transform conflicts
+
+### Fade-to-gray before hide
+- `fading` state (bool) added to App.tsx
+- Set `fading=true` immediately when state→idle; cleared on any active event
+- `.orb-wrapper.fading` applies `filter: saturate(0.04) brightness(0.45) blur(0.5px)` to glow ring with 0.9s ease, fades sparkles and text to opacity:0
+- After `HIDE_DELAY` (1500ms), `visible=false` triggers slide-out
+
+### Ambient aura
+- `::before` on `.orb-glow-ring`: soft radial glow (not a structured ring), pulses with `@keyframes aura-pulse`
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 12 T6+T7: Tauri scaffold + Bobby orb UI v2 (Claude Sonnet 4.6)
 
 Shipped the Tauri desktop overlay with animated Bobby orb. Volume halved from 100% → 50% default.
@@ -23,7 +54,7 @@ Already committed (`caa2745`). Port 3000, Defender exclusions, right-edge positi
 ### Why @property is required here
 CSS custom properties are not typed by default — the browser treats them as opaque strings and doesn't know how to interpolate between `217` and `38`. Registering `--orb-h` as `<number>` tells the browser it's a number, enabling smooth hue interpolation via `transition`. Without this, any `transition: --orb-h` declaration is silently ignored.
 
-Commit hash: (pending)
+Commit hash: c38bf1f
 
 ---
 
