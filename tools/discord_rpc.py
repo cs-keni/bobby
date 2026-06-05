@@ -75,7 +75,7 @@ try {
     $obj = $r.json | ConvertFrom-Json
     if ($obj.evt -eq "ERROR") { Write-Output "AUTH_FAILED:$($obj.data.message)"; exit 1 }
 
-    Write-Frame $pipe 1 @{ cmd = "VOICE_CHANNEL_SELECT"; args = @{ channel_id = $chan }; nonce = ([guid]::NewGuid().ToString()) }
+    Write-Frame $pipe 1 @{ cmd = "VOICE_CHANNEL_SELECT"; args = @{ channel_id = $chan; force = $true }; nonce = ([guid]::NewGuid().ToString()) }
     $r = Read-Frame $pipe
     Write-Output "OK:$($r.json)"
 } catch {
@@ -95,7 +95,7 @@ try {
         cmd   = "AUTHORIZE"
         args  = @{
             client_id = $cid
-            scopes    = @("rpc")
+            scopes    = @("rpc", "rpc.voice.read", "rpc.voice.write")
         }
         nonce = [guid]::NewGuid().ToString()
     }
