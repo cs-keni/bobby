@@ -1,14 +1,14 @@
 # Bobby — Handoff
 
-## Last Updated: 2026-06-04 (Claude Sonnet 4.6 — Phase 12 T1–T5 WS backend)
+## Last Updated: 2026-06-04 (Claude Sonnet 4.6 — Phase 12 T6+T7 Tauri orb)
 
 ---
 
 ## Current State
 
-**HEAD is `caa2745` (pre-commit; T1–T5 staged, not yet pushed). 259 tests passing, 1 skipped.**
+**HEAD is `caa2745`. T6+T7 orb changes staged, not yet committed. 259 tests passing, 1 skipped.**
 
-Phase 12 WS backend is complete. `core/events.py`, `server/ws.py`, and pipeline wiring are in. The Tauri work (T6–T8) is the remaining implementation. T4 (browser verify) should be done manually before starting T6.
+Phase 12 WS backend is complete (`caa2745`). T6 Tauri scaffold is working (Defender exclusions, port 3000, right-edge positioning). T7 orb UI v2 is implemented with `@property` hue transitions + rotating Siri-style flare corona. Volume defaulted to 50%. T8 (Mica blur, tray icon, transcript scroll) remains.
 
 ---
 

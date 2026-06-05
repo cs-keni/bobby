@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-04 — Phase 12 T6+T7: Tauri scaffold + Bobby orb UI v2 (Claude Sonnet 4.6)
+
+Shipped the Tauri desktop overlay with animated Bobby orb. Volume halved from 100% → 50% default.
+
+### T6 — Tauri scaffold (earlier in session)
+Already committed (`caa2745`). Port 3000, Defender exclusions, right-edge positioning in `lib.rs`.
+
+### T7 — Orb UI v2: @property hue transitions + Siri flare corona
+- `core/tts.py`: `_play_mp3` now reads `tts_volume` from config (default 50); passes `-volume` flag to ffplay. Was hardcoded to 100%.
+- `desktop/src/App.tsx`: Added `.orb-glow-ring` wrapper div so the conic flare can overflow the orb without being clipped by `overflow: hidden`.
+- `desktop/src/App.css` — full rewrite for smooth state transitions:
+  - `@property --orb-h { syntax: '<number>'; }` — registered as a `<number>` type so CSS can actually interpolate it between states (without `@property`, custom props snap instead of transitioning).
+  - `--flare-angle` registered as `<angle>` for the rotation animation.
+  - `.orb-glow-ring--*` sets state hues: idle=240, listening=217, thinking=38, speaking=160. Transitions at `0.75s ease`.
+  - `.orb-glow-ring::before` — rotating conic gradient flare. Positioned at `inset: -18px` (bleeds outside orb), masked with `radial-gradient` to create a ring/corona shape. `opacity: 0` when idle; `opacity: 1` on any active state. `animation: flare-rotate 4s linear infinite`.
+  - Orb gradient reads from `var(--orb-h)` so color transitions are smooth through intermediate hues instead of jumping.
+  - Flare hidden when idle, appears on listening/thinking/speaking.
+
+### Why @property is required here
+CSS custom properties are not typed by default — the browser treats them as opaque strings and doesn't know how to interpolate between `217` and `38`. Registering `--orb-h` as `<number>` tells the browser it's a number, enabling smooth hue interpolation via `transition`. Without this, any `transition: --orb-h` declaration is silently ignored.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 12 T1–T5: WebSocket event bus + pipeline wiring (Claude Sonnet 4.6)
 
 Shipped the WS backend layer that Tauri depends on. Test count: 236 → 259 (23 new tests, 0 regressions).

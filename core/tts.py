@@ -60,8 +60,10 @@ def speak(text: str) -> None:
 def _play_mp3(mp3_bytes: bytes) -> None:
     """Play MP3 bytes via ffplay → PulseAudio (WSL2-safe, no PortAudio needed)."""
     import subprocess
+    volume = int(config.get("tts_volume", 50))
     proc = subprocess.Popen(
-        ["ffplay", "-nodisp", "-autoexit", "-f", "mp3", "-i", "pipe:0", "-loglevel", "quiet"],
+        ["ffplay", "-nodisp", "-autoexit", "-f", "mp3", "-i", "pipe:0",
+         "-volume", str(volume), "-loglevel", "quiet"],
         stdin=subprocess.PIPE,
     )
     try:

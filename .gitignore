@@ -40,6 +40,7 @@ phone/.next/
 desktop/node_modules/
 desktop/target/
 desktop/dist/
+desktop/.env.local
 
 # Config with secrets (keep config.yaml.example, not config.yaml)
 config.yaml

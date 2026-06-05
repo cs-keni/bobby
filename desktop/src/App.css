@@ -1,0 +1,278 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Registered custom properties ──────────────────────────────────────
+   Declaring --orb-h as <number> lets CSS transition through intermediate
+   hues instead of jumping between them. Without @property, custom props
+   can't be interpolated — the browser would snap on every state change.
+──────────────────────────────────────────────────────────────────────── */
+
+@property --orb-h {
+  syntax: '<number>';
+  initial-value: 220;
+  inherits: false;
+}
+
+@property --flare-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ── Slide wrapper ──────────────────────────────────────────────────── */
+
+.orb-wrapper {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+
+  /* Hidden state: off-screen AND invisible */
+  opacity: 0;
+  transform: translateY(-50%) translateX(calc(100% + 32px));
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease;
+}
+
+.orb-wrapper.visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
+}
+
+/* ── Glow ring — corona/flare lives here ────────────────────────────────
+   Wraps the orb so ::before can overflow without being clipped.
+   The orb itself has overflow: hidden for inner content (waveform bars).
+──────────────────────────────────────────────────────────────────────── */
+
+.orb-glow-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  /* Hue transitions smoothly via @property */
+  --orb-h: 220;
+  transition: --orb-h 0.75s ease;
+}
+
+/* State hues */
+.orb-glow-ring--idle     { --orb-h: 240; }
+.orb-glow-ring--listening { --orb-h: 217; }
+.orb-glow-ring--thinking  { --orb-h: 38;  }
+.orb-glow-ring--speaking  { --orb-h: 160; }
+
+/* ── Siri-style rotating flare corona ───────────────────────────────────
+   A conic gradient that rotates continuously, creating the "rainbow halo"
+   effect. Sized larger than the orb so it bleeds out organically.
+   mix-blend-mode: screen makes it glow instead of paste on top.
+──────────────────────────────────────────────────────────────────────── */
+
+.orb-glow-ring::before {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from var(--flare-angle),
+    hsla(calc(var(--orb-h) - 40), 85%, 65%, 0.0),
+    hsla(calc(var(--orb-h) - 20), 90%, 70%, 0.55),
+    hsla(var(--orb-h),            95%, 72%, 0.7),
+    hsla(calc(var(--orb-h) + 30), 90%, 68%, 0.45),
+    hsla(calc(var(--orb-h) + 60), 80%, 65%, 0.2),
+    hsla(calc(var(--orb-h) + 90), 75%, 60%, 0.0),
+    hsla(calc(var(--orb-h) - 40), 85%, 65%, 0.0)
+  );
+  mask-image: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(0,0,0,0.6) 60%,
+    rgba(0,0,0,0.9) 75%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(0,0,0,0.6) 60%,
+    rgba(0,0,0,0.9) 75%,
+    transparent 100%
+  );
+  animation: flare-rotate 4s linear infinite;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease, --orb-h 0.75s ease;
+  /* Flare shares the hue variable from parent */
+  --orb-h: inherit;
+}
+
+/* Only show the flare when Bobby is active */
+.orb-glow-ring--listening::before,
+.orb-glow-ring--thinking::before,
+.orb-glow-ring--speaking::before {
+  opacity: 1;
+}
+
+@keyframes flare-rotate {
+  from { --flare-angle: 0deg; }
+  to   { --flare-angle: 360deg; }
+}
+
+/* ── Orb base ───────────────────────────────────────────────────────── */
+
+.orb {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  /* Color transitions use the inherited hue */
+  background: radial-gradient(
+    circle at 38% 38%,
+    hsl(calc(var(--orb-h) + 30), 90%, 78%),
+    hsl(var(--orb-h), 80%, 55%) 55%,
+    hsl(calc(var(--orb-h) - 15), 75%, 42%)
+  );
+  box-shadow:
+    0 0 0px 0px hsla(var(--orb-h), 80%, 60%, 0),
+    0 0 24px    hsla(var(--orb-h), 80%, 60%, 0.5),
+    0 4px 12px  rgba(0, 0, 0, 0.3);
+  transition:
+    background 0.75s ease,
+    box-shadow 0.75s ease;
+}
+
+/* ── Idle (shouldn't normally be visible, but just in case) ─────────── */
+
+.orb--idle {
+  background: rgba(80, 80, 100, 0.4);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Per-state animations ───────────────────────────────────────────── */
+
+.orb--listening {
+  animation: orb-breathe 2s ease-in-out infinite, blob-morph 5s ease-in-out infinite;
+}
+
+.orb--thinking {
+  animation: blob-morph 3s ease-in-out infinite;
+}
+
+.orb--speaking {
+  animation: blob-morph 2.5s ease-in-out infinite;
+}
+
+/* ── Organic blob morph (makes it feel alive) ───────────────────────── */
+
+@keyframes blob-morph {
+  0%, 100% { border-radius: 50%; }
+  20%  { border-radius: 48% 52% 56% 44% / 54% 46% 54% 46%; }
+  40%  { border-radius: 54% 46% 44% 56% / 46% 54% 46% 54%; }
+  60%  { border-radius: 44% 56% 50% 50% / 56% 44% 58% 42%; }
+  80%  { border-radius: 56% 44% 54% 46% / 44% 56% 44% 56%; }
+}
+
+/* ── Listening breathe pulse ────────────────────────────────────────── */
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+/* ── Listening ring ─────────────────────────────────────────────────── */
+
+.listening-ring {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  animation: ring-expand 1.6s ease-out infinite;
+}
+
+@keyframes ring-expand {
+  0%   { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* ── Thinking spinner ───────────────────────────────────────────────── */
+
+.thinking-ring {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  border-right-color: rgba(255, 255, 255, 0.5);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Siri-style waveform (7 bars, bell-curve heights) ───────────────── */
+
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 32px;
+}
+
+.waveform-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  height: 3px;
+  animation: wave-bar var(--dur, 0.8s) ease-in-out infinite;
+}
+
+@keyframes wave-bar {
+  0%, 100% { height: 3px; }
+  50%       { height: var(--max-h, 16px); }
+}
+
+/* ── Response text ──────────────────────────────────────────────────── */
+
+.orb-text {
+  max-width: 150px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  line-height: 1.45;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  animation: text-in 0.3s ease;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 7px 11px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+@keyframes text-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

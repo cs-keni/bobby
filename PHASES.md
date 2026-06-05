@@ -623,7 +623,7 @@ Architecture locked by `/plan-eng-review` + Codex outside voice on 2026-06-04. T
 ### UI-B — Tauri Desktop Panel
 
 - [x] **T6** *(Windows terminal)* — Scaffold Tauri at `desktop/`. Port changed to 3000 (1333–1432 reserved by Hyper-V/WSL2). Defender exclusions added for `.cargo`, `.rustup`, `target/`. Window opens with "Welcome to Tauri + React". `.gitignore` updated.
-- [ ] **T7** — Full Tauri React panel: tray icon (`tauri-plugin-tray`), always-on-top frameless side panel, WS client (`desktop/src/ws.ts`) with exponential backoff reconnect, state-driven rendering (idle/listening/thinking/speaking), 300ms spring slide-in/out, Bobby orb with state pulse, response text + transcript scroll.
+- [x] **T7** — Tauri orb overlay v2: WS client with exponential backoff, state-driven orb with `@property --orb-h` hue transitions (0.75s ease), rotating conic gradient Siri-style flare corona, 7-bar waveform, slide-in from right edge, hidden when idle. Volume halved to 50% via `tts_volume` config.
 - [ ] **T8** — CSS sine-curve waveform on speaking state. `tauri-plugin-window-vibrancy` for Mica blur. Conversation history scroll. Text input fallback.
 
 ### UI-C — Polish & Auto-start
