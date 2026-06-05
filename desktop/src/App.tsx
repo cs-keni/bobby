@@ -8,7 +8,7 @@ const appWindow = getCurrentWindow();
 
 const TOKEN = import.meta.env.VITE_BOBBY_TOKEN as string ?? '';
 const WS_URL = `ws://localhost:8765/ws?token=${TOKEN}`;
-const HIDE_DELAY = 1500;
+const HIDE_DELAY = 500;
 
 const BAR_MAX_H = [8, 14, 22, 30, 22, 14, 8];
 const BAR_DURATION = [0.7, 0.75, 0.8, 0.9, 0.8, 0.75, 0.7];
@@ -79,7 +79,6 @@ export default function App() {
   const [state, setState] = useState<BobbyState>('idle');
   const [text, setText] = useState('');
   const [visible, setVisible] = useState(false);
-  const [fading, setFading] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsRef = useRef<BobbyWS | null>(null);
 
@@ -99,18 +98,13 @@ export default function App() {
           clearTimeout(hideTimer.current);
           hideTimer.current = null;
         }
-        setFading(false);
         setVisible(true);
-        // Let mouse events reach the orb while it's visible
         appWindow.setIgnoreCursorEvents(false).catch(() => {});
       } else {
-        // Start gray fade immediately; slide out after HIDE_DELAY
-        setFading(true);
         hideTimer.current = setTimeout(() => {
           setVisible(false);
           setText('');
           hideTimer.current = null;
-          // Pass all mouse events through the window when orb is hidden
           appWindow.setIgnoreCursorEvents(true).catch(() => {});
         }, HIDE_DELAY);
       }
@@ -124,7 +118,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`orb-wrapper${visible ? ' visible' : ''}${fading ? ' fading' : ''}`}>
+    <div className={`orb-wrapper${visible ? ' visible' : ''}`}>
       <div className={`orb-glow-ring orb-glow-ring--${state}`}>
         <SparkleField />
         <div className={`orb orb--${state}`}>

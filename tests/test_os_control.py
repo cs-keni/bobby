@@ -4,7 +4,8 @@ These must pass before Phase 2 ships.
 """
 
 import pytest
-from tools.os_control import execute_terminal, _is_dangerous, DANGEROUS_PATTERNS
+from unittest.mock import patch
+from tools.os_control import execute_terminal, _is_dangerous, DANGEROUS_PATTERNS, list_running_apps, APP_MAP
 
 
 class TestDangerousCommandDetection:
@@ -69,3 +70,51 @@ class TestDangerousCommandDetection:
         result = execute_terminal("RM -RF /tmp/test")
         assert not result.success
         assert result.data.get("requires_confirmation") is True
+
+
+class TestListRunningApps:
+    """list_running_apps calls PowerShell — mock _ps_run to avoid Windows dependency."""
+
+    def test_returns_running_true_when_app_found(self):
+        output = "Name        Id  Window\n----        --  ------\nObsidian  1234  Obsidian\n"
+        with patch("tools.os_control._ps_run", return_value=(0, output)):
+            result = list_running_apps(filter="obsidian")
+        assert result.success
+        assert result.data["running"] is True
+        assert "Obsidian" in result.message
+
+    def test_returns_running_false_when_not_found(self):
+        with patch("tools.os_control._ps_run", return_value=(0, "not running")):
+            result = list_running_apps(filter="obsidian")
+        assert result.success
+        assert result.data["running"] is False
+        assert "not running" in result.message
+
+    def test_empty_output_reports_not_running(self):
+        with patch("tools.os_control._ps_run", return_value=(0, "")):
+            result = list_running_apps(filter="obsidian")
+        assert result.success
+        assert result.data["running"] is False
+
+    def test_no_filter_lists_all_visible_apps(self):
+        output = "Name    Window\n----    ------\nChrome  Google\n"
+        with patch("tools.os_control._ps_run", return_value=(0, output)):
+            result = list_running_apps()
+        assert result.success
+        assert result.data["running"] is True
+
+    def test_sanitizes_filter_input(self):
+        captured = []
+        def fake_ps_run(cmd):
+            captured.append(cmd)
+            return (0, "not running")
+        with patch("tools.os_control._ps_run", fake_ps_run):
+            list_running_apps(filter="evil'; DROP TABLE--")
+        # The raw injection payload (quote + semicolon) should not survive into the filter
+        assert "'; DROP" not in captured[0]
+
+
+class TestAppMap:
+    def test_obsidian_in_app_map(self):
+        assert "obsidian" in APP_MAP
+        assert APP_MAP["obsidian"] == "Obsidian"

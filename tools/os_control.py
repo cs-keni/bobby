@@ -53,6 +53,10 @@ APP_MAP: dict[str, str] = {
     "zoom": "zoom",
     "obs": "obs64",
     "steam": "steam",
+    "obsidian": "Obsidian",
+    "notion": "Notion",
+    "figma": "figma",
+    "cursor": "cursor",
 }
 
 
@@ -485,6 +489,48 @@ def get_active_window() -> ToolResult:
             return ToolResult(success=True, message=title or "(unknown)", data={"title": title})
     except Exception as e:
         return ToolResult(success=False, message=f"Couldn't get active window: {e}")
+
+
+@register_tool(
+    name="list_running_apps",
+    description=(
+        "List apps currently running on Windows. "
+        "Use after open_app to verify a launch succeeded, or when the user asks what's open. "
+        "Pass a filter to check for a specific app (e.g. 'obsidian', 'chrome')."
+    ),
+    parameters={
+        "filter": {
+            "type": "string",
+            "description": "Optional partial name to filter by (case-insensitive). Leave empty to list all visible apps.",
+        },
+    },
+)
+def list_running_apps(filter: str = "") -> ToolResult:
+    try:
+        if filter:
+            safe = filter.replace("'", "").replace('"', "")[:64]
+            ps = (
+                f"$p = Get-Process | Where-Object {{ $_.Name -like '*{safe}*' }}; "
+                f"if ($p) {{ "
+                f"  $p | Select-Object Name, Id, @{{Name='Window';Expression={{$_.MainWindowTitle}}}} "
+                f"  | Format-Table -AutoSize | Out-String "
+                f"}} else {{ 'not running' }}"
+            )
+        else:
+            ps = (
+                "Get-Process | Where-Object { $_.MainWindowTitle -ne '' } "
+                "| Select-Object Name, @{Name='Window';Expression={$_.MainWindowTitle}} "
+                "| Sort-Object Name | Format-Table -AutoSize | Out-String"
+            )
+        rc, out = _ps_run(ps)
+        text = out.strip()
+        if not text or text.lower() == "not running":
+            label = f"'{filter}' is not running." if filter else "No visible apps found."
+            return ToolResult(success=True, message=label, data={"running": False})
+        return ToolResult(success=True, message=text, data={"running": True})
+    except Exception as e:
+        log.error(f"list_running_apps failed: {e}")
+        return ToolResult(success=False, message=f"Couldn't list running apps: {e}")
 
 
 @register_tool(

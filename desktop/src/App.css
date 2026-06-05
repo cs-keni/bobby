@@ -50,24 +50,6 @@ html, body, #root {
   pointer-events: auto;
 }
 
-/* ── Fade-to-gray state ─────────────────────────────────────────────── */
-
-.orb-wrapper.fading .orb-glow-ring {
-  filter: saturate(0.04) brightness(0.45) blur(0.5px);
-}
-
-.orb-wrapper.fading .sparkle-field {
-  opacity: 0;
-}
-
-.orb-wrapper.fading .orb-glow-ring::before {
-  opacity: 0;
-}
-
-.orb-wrapper.fading .orb-text {
-  opacity: 0;
-}
-
 /* ── Glow ring — sparkle field lives here ───────────────────────────── */
 
 .orb-glow-ring {
@@ -77,8 +59,7 @@ html, body, #root {
   border-radius: 50%;
 
   --orb-h: 220;
-  transition: --orb-h 0.75s ease, filter 0.9s ease;
-  filter: saturate(1) brightness(1);
+  transition: --orb-h 0.75s ease;
 }
 
 /* State hues — hue transitions smoothly via @property */

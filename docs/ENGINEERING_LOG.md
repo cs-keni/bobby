@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-06-04 — Phase 12: orb fade-to-gray removal + open_app + list_running_apps (Claude Sonnet 4.6)
+
+**Orb: removed fade-to-gray**
+- Removed `fading` state from `App.tsx` entirely — orb now simply slides right after 500ms idle
+- `HIDE_DELAY` reduced 1500ms → 500ms; no CSS filter transition, no gray circle
+- Removed all `.orb-wrapper.fading` CSS rules and `filter` transition on `.orb-glow-ring`
+
+**open_app: Obsidian + verification**
+- `tools/os_control.py`: added `"obsidian": "Obsidian"`, `"notion"`, `"figma"`, `"cursor"` to APP_MAP
+- Added `list_running_apps` tool: calls PowerShell `Get-Process`, accepts optional partial-name filter, returns `ToolResult(success, message, data={"running": bool})`
+- Shell injection sanitized: `filter.replace("'","").replace('"',"")[:64]`
+
+**Tests**
+- `tests/test_os_control.py`: added `TestListRunningApps` (5 tests), `TestAppMap` (1 test)
+- Fixed `test_sanitizes_filter_input`: assertion was checking for `'` in the entire PS command (which contains template literals like `'not running'`). Changed to assert the injection payload `'; DROP` is not present.
+- All 34 tests passing.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 12: click-through fix (setIgnoreCursorEvents) (Claude Sonnet 4.6)
 
 **Bug**: Tauri window covered the right edge of the screen even when the orb was invisible/idle, blocking all mouse clicks in that region. Root cause: the window itself (not just CSS opacity) was capturing events.
