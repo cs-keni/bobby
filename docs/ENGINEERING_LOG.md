@@ -20,7 +20,7 @@ Both use `var(--orb-h)` so they smoothly recolor when state changes.
 - Outer glow: `22px → 28px` spread, alpha `0.78 → 0.88`; far glow: `48px → 62px`
 - Aura: `inset: -18px → -22px`
 
-Commit hash: (pending)
+Commit hash: 0187685
 
 ---
 
