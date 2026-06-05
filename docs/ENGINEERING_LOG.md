@@ -12,7 +12,7 @@
 - `appWindow` is `getCurrentWindow()` from `@tauri-apps/api/window` (already in package.json)
 - `.catch(() => {})` swallows the error gracefully in dev (before Tauri API is fully initialized)
 
-Commit hash: (pending)
+Commit hash: 4134181
 
 ---
 
