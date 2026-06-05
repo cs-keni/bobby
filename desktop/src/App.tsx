@@ -127,14 +127,14 @@ export default function App() {
   return (
     <div className={`orb-wrapper${visible ? ' visible' : ''}`}>
       <div className={`orb-glow-ring orb-glow-ring--${displayState}`}>
+        <div className="orb-backdrop" />
         <SparkleField />
+        <div className="orbit-ring" />
+        <div className="orbit-ring-inner" />
         <div className={`orb orb--${displayState}`}>
           <OrbIcon state={state} />
         </div>
       </div>
-      {text && state === 'speaking' && (
-        <p className="orb-text">{text}</p>
-      )}
     </div>
   );
 }

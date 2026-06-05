@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-06-05 — Phase 12: caption removed, orbit rings + dark backdrop added (Claude Sonnet 4.6)
+
+**Position shift on speaking (root cause)**
+`orb-wrapper` is a flex column with `top: 50%; transform: translateY(-50%)`. When `.orb-text` appeared during the speaking state, it added ~70px to the wrapper height. The `-50%` recalculated against the new taller height, shifting the orb diagonally up-left. Fix: removed the caption entirely. For a game overlay, caption text is unreadable against busy backgrounds anyway.
+
+**Visual enhancement — dark backdrop disc**
+Added `.orb-backdrop` (absolute, `inset: -28px`, radial gradient from `rgba(0,0,0,0.52)` to transparent). Always visible regardless of state. Creates contrast against light/varied backgrounds (e.g. cloud wallpapers). Renders behind sparkles via DOM order.
+
+**Visual enhancement — orbit rings**
+Added two orbit arcs using asymmetric border coloring (`border-top` + `border-right` colored, others transparent):
+- `.orbit-ring`: outer (`inset: -13px`), rotates 4s, fades in/out with active states
+- `.orbit-ring-inner`: inner (`inset: -7px`), counter-rotates 7s, different arc orientation
+Both use `var(--orb-h)` so they smoothly recolor when state changes.
+
+**Glow/aura radius bump**
+- Outer glow: `22px → 28px` spread, alpha `0.78 → 0.88`; far glow: `48px → 62px`
+- Aura: `inset: -18px → -22px`
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 12: orb gray-circle fix + color vibrancy boost (Claude Sonnet 4.6)
 
 **Gray circle on slide-out (root cause)**

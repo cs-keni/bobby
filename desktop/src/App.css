@@ -80,7 +80,7 @@ html, body, #root {
 .orb-glow-ring::before {
   content: '';
   position: absolute;
-  inset: -18px;
+  inset: -22px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 50%,
@@ -193,8 +193,8 @@ html, body, #root {
 
   /* Outer glow + ground shadow + inset depth for translucency/jelly */
   box-shadow:
-    0 0 22px    hsla(var(--orb-h), 95%, 68%, 0.78),
-    0 0 48px    hsla(var(--orb-h), 90%, 62%, 0.38),
+    0 0 28px    hsla(var(--orb-h), 96%, 70%, 0.88),
+    0 0 62px    hsla(var(--orb-h), 90%, 62%, 0.48),
     0 8px 18px  rgba(0, 0, 0, 0.38),
     inset 0 -9px 18px hsla(calc(var(--orb-h)-22), 85%, 30%, 0.55),
     inset 0  5px 10px rgba(255, 255, 255, 0.22);
@@ -309,30 +309,71 @@ html, body, #root {
   50%       { height: var(--max-h, 16px); }
 }
 
-/* ── Response text ──────────────────────────────────────────────────── */
+/* ── Dark backdrop disc — always-on contrast plate against any background */
 
-.orb-text {
-  max-width: 150px;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
-  text-align: center;
-  line-height: 1.45;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-  animation: text-in 0.3s ease;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 7px 11px;
-  border-radius: 10px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  transition: opacity 0.5s ease;
+.orb-backdrop {
+  position: absolute;
+  inset: -28px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0.52) 0%,
+    rgba(0, 0, 0, 0.28) 44%,
+    transparent 68%
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes text-in {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Orbit rings — rotating arcs that give Bobby visual presence ─────── */
+
+.orbit-ring {
+  position: absolute;
+  inset: -13px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color:   hsla(var(--orb-h), 95%, 80%, 0.92);
+  border-right-color: hsla(var(--orb-h), 90%, 72%, 0.45);
+  filter: drop-shadow(0 0 4px hsla(var(--orb-h), 90%, 70%, 0.55));
+  animation: orbit-spin 4s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.orb-glow-ring--listening .orbit-ring,
+.orb-glow-ring--thinking  .orbit-ring,
+.orb-glow-ring--speaking  .orbit-ring {
+  opacity: 1;
+}
+
+.orbit-ring-inner {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  border-bottom-color: hsla(var(--orb-h), 90%, 82%, 0.78);
+  border-left-color:   hsla(var(--orb-h), 85%, 74%, 0.36);
+  animation: orbit-spin-reverse 7s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.orb-glow-ring--listening .orbit-ring-inner,
+.orb-glow-ring--thinking  .orbit-ring-inner,
+.orb-glow-ring--speaking  .orbit-ring-inner {
+  opacity: 1;
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orbit-spin-reverse {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
 }
