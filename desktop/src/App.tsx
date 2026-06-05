@@ -81,9 +81,11 @@ export default function App() {
   const [visible, setVisible] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsRef = useRef<BobbyWS | null>(null);
+  // Preserves the last active state so the orb slides out with its real color,
+  // not the gray idle style.
+  const lastActiveRef = useRef<BobbyState>('listening');
 
   useEffect(() => {
-    // Start click-through until the orb becomes visible for the first time
     appWindow.setIgnoreCursorEvents(true).catch(() => {});
 
     const ws = new BobbyWS(WS_URL);
@@ -94,6 +96,7 @@ export default function App() {
       if (event.text) setText(event.text);
 
       if (event.state !== 'idle') {
+        lastActiveRef.current = event.state;
         if (hideTimer.current) {
           clearTimeout(hideTimer.current);
           hideTimer.current = null;
@@ -117,11 +120,15 @@ export default function App() {
     };
   }, []);
 
+  // When idle, keep the last active state's CSS classes so the orb slides
+  // out with its color rather than flashing gray.
+  const displayState = state === 'idle' ? lastActiveRef.current : state;
+
   return (
     <div className={`orb-wrapper${visible ? ' visible' : ''}`}>
-      <div className={`orb-glow-ring orb-glow-ring--${state}`}>
+      <div className={`orb-glow-ring orb-glow-ring--${displayState}`}>
         <SparkleField />
-        <div className={`orb orb--${state}`}>
+        <div className={`orb orb--${displayState}`}>
           <OrbIcon state={state} />
         </div>
       </div>

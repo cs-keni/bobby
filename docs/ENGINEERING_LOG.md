@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-06-04 — Phase 12: orb gray-circle fix + color vibrancy boost (Claude Sonnet 4.6)
+
+**Gray circle on slide-out (root cause)**
+The `orb--idle` CSS class overrode `background` to `rgba(70,70,88,0.38)` immediately when state became `idle`. The orb was visible with that gray color for the full 500ms `HIDE_DELAY` before sliding off.
+
+**Fix: `lastActiveRef` in App.tsx**
+- Added `lastActiveRef = useRef<BobbyState>('listening')` — updated on every non-idle state transition
+- `displayState = state === 'idle' ? lastActiveRef.current : state` — used for CSS class names
+- `OrbIcon` still receives real `state` so the icon disappears correctly when idle
+- Removed `.orb--idle` CSS rule entirely (gray background override no longer reachable)
+
+**Color vibrancy**
+- White specular: reduced opacity `0.92 → 0.65`, radius `30% → 26%` (less white wash over hue)
+- Rim light: saturation `78% → 92%`, alpha `0.50 → 0.68` (colorful bounce light)
+- Body center: saturation `96% → 100%`, lightness `84% → 76%` (vivid, less pale)
+- Body mid: saturation `82% → 96%`, lightness `58% → 62%`
+- Outer glow: saturation `84% → 95%`, lightness `62% → 68%`, alpha `0.60 → 0.78`
+- Far glow: saturation `80% → 90%`, alpha `0.22 → 0.38`
+- Aura: saturation `88% → 96%`, alpha `0.40 → 0.55`
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-04 — Phase 12: orb fade-to-gray removal + open_app + list_running_apps (Claude Sonnet 4.6)
 
 **Orb: removed fade-to-gray**
@@ -19,7 +43,7 @@
 - Fixed `test_sanitizes_filter_input`: assertion was checking for `'` in the entire PS command (which contains template literals like `'not running'`). Changed to assert the injection payload `'; DROP` is not present.
 - All 34 tests passing.
 
-Commit hash: (pending)
+Commit hash: 19ce3dd
 
 ---
 
