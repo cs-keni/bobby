@@ -8,7 +8,7 @@
 
 **Obsidian open_app** — `cmd.exe /c start "" "Obsidian"` searches App Paths registry for `Obsidian.exe`. Squirrel-installed Electron apps don't always register App Paths cleanly. The brief window was Obsidian launching, detecting an issue (missing vault or single-instance handoff), and exiting. Fixed by changing `APP_MAP["obsidian"]` from `"Obsidian"` to `"obsidian://"` — Windows routes the URI to Obsidian's registered handler, which works whether or not Obsidian is already running.
 
-Commit hash: (pending)
+Commit hash: dee285b
 
 ---
 
