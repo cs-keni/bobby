@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-06-05 — Phase 12: orbit rings → soft mini-orb satellites (Claude Sonnet 4.6)
+
+**Removed** dark backdrop (too heavy) and hard geometric orbit arcs (Jarvis-like).
+
+**Added** `OrbitBlobs` component: 3 mini-orb satellites using pivot-arm orbit technique.
+- `.orbit-arm`: zero-size pivot div at the orb center; CSS animation rotates it to swing the blob through a full orbit (5.0s / 8.2s / 6.5s, different start delays so they never align)
+- `.orbit-blob`: child positioned at `left: var(--br)` from the pivot; has its own `orbit-blob-wobble` border-radius morph animation (2.4–3.1s) for organic feel
+- Each blob uses `var(--orb-h)` for color so it recolors automatically with state transitions
+- Radii: 42px / 34px / 48px; sizes: 14px / 10px / 9px; hue offsets: 0 / +20 / -15
+
+**Also removed** dead `text` state from App.tsx (caption was removed in previous commit).
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — Phase 12: caption removed, orbit rings + dark backdrop added (Claude Sonnet 4.6)
 
 **Position shift on speaking (root cause)**

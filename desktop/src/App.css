@@ -309,71 +309,65 @@ html, body, #root {
   50%       { height: var(--max-h, 16px); }
 }
 
-/* ── Dark backdrop disc — always-on contrast plate against any background */
+/* ── Orbiting mini-orbs — soft spirit-blob satellites ───────────────── */
 
-.orb-backdrop {
+/* The arm is a zero-size pivot at the orb center. Rotating the arm
+   swings the blob child through a full orbit. Using a separate pivot
+   element means the blob itself can wobble independently. */
+.orbit-arm {
   position: absolute;
-  inset: -28px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 50%,
-    rgba(0, 0, 0, 0.52) 0%,
-    rgba(0, 0, 0, 0.28) 44%,
-    transparent 68%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Orbit rings — rotating arcs that give Bobby visual presence ─────── */
-
-.orbit-ring {
-  position: absolute;
-  inset: -13px;
-  border-radius: 50%;
-  border: 1.5px solid transparent;
-  border-top-color:   hsla(var(--orb-h), 95%, 80%, 0.92);
-  border-right-color: hsla(var(--orb-h), 90%, 72%, 0.45);
-  filter: drop-shadow(0 0 4px hsla(var(--orb-h), 90%, 70%, 0.55));
-  animation: orbit-spin 4s linear infinite;
-  pointer-events: none;
-  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  animation: orbit-arm-spin var(--bdur, 6s) linear infinite;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.7s ease;
+  pointer-events: none;
+  z-index: 3;
 }
 
-.orb-glow-ring--listening .orbit-ring,
-.orb-glow-ring--thinking  .orbit-ring,
-.orb-glow-ring--speaking  .orbit-ring {
+.orb-glow-ring--listening .orbit-arm,
+.orb-glow-ring--thinking  .orbit-arm,
+.orb-glow-ring--speaking  .orbit-arm {
   opacity: 1;
 }
 
-.orbit-ring-inner {
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  border: 1px solid transparent;
-  border-bottom-color: hsla(var(--orb-h), 90%, 82%, 0.78);
-  border-left-color:   hsla(var(--orb-h), 85%, 74%, 0.36);
-  animation: orbit-spin-reverse 7s linear infinite;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-
-.orb-glow-ring--listening .orbit-ring-inner,
-.orb-glow-ring--thinking  .orbit-ring-inner,
-.orb-glow-ring--speaking  .orbit-ring-inner {
-  opacity: 1;
-}
-
-@keyframes orbit-spin {
+@keyframes orbit-arm-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 
-@keyframes orbit-spin-reverse {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(-360deg); }
+.orbit-blob {
+  position: absolute;
+  top: 0;
+  left: var(--br, 40px);
+  width: var(--bw, 12px);
+  height: var(--bw, 12px);
+  margin-top:  calc(var(--bw, 12px) / -2);
+  margin-left: calc(var(--bw, 12px) / -2);
+  border-radius: 50%;
+
+  /* Mini-sphere: specular highlight at top-left, colorful body */
+  background: radial-gradient(
+    circle at 32% 28%,
+    hsl(calc(var(--orb-h) + var(--dh, 0)), 100%, 94%) 0%,
+    hsla(calc(var(--orb-h) + var(--dh, 0)), 96%, 76%, 0.90) 38%,
+    hsla(calc(var(--orb-h) + var(--dh, 0)), 88%, 62%, 0)    100%
+  );
+
+  /* Soft halo — same hue as the blob, two layers of glow */
+  box-shadow:
+    0 0 7px  3px hsla(calc(var(--orb-h) + var(--dh, 0)), 94%, 76%, 0.82),
+    0 0 18px 6px hsla(calc(var(--orb-h) + var(--dh, 0)), 88%, 66%, 0.44);
+
+  animation: orbit-blob-wobble var(--bwdur, 2.5s) ease-in-out infinite;
+}
+
+/* Organic border-radius morph — makes each blob feel alive */
+@keyframes orbit-blob-wobble {
+  0%, 100% { border-radius: 50%; }
+  22%  { border-radius: 62% 38% 54% 46% / 44% 58% 42% 56%; }
+  48%  { border-radius: 38% 62% 44% 56% / 60% 40% 58% 42%; }
+  74%  { border-radius: 54% 46% 36% 64% / 40% 60% 56% 44%; }
 }

@@ -27,6 +27,14 @@ const SPARKLES = [
   { sx: '-50deg', sy: '10deg',  sr: '31px', sw: '2.5px', dur: 6.0, delay: -4.2, dh: -20 },
 ] as const;
 
+// Three mini-orb satellites: different sizes, radii, speeds, and hue offsets so
+// they never align — gives the spirit-cloud / Asha feel.
+const ORBIT_BLOBS = [
+  { br: '42px', bw: '14px', bdur: '5.0s', bdelay: '0s',    dh: 0,   bwdur: '2.4s' },
+  { br: '34px', bw: '10px', bdur: '8.2s', bdelay: '-2.8s', dh: 20,  bwdur: '3.1s' },
+  { br: '48px', bw: '9px',  bdur: '6.5s', bdelay: '-4.3s', dh: -15, bwdur: '2.8s' },
+] as const;
+
 function SparkleField() {
   return (
     <div className="sparkle-field">
@@ -47,6 +55,33 @@ function SparkleField() {
         />
       ))}
     </div>
+  );
+}
+
+function OrbitBlobs() {
+  return (
+    <>
+      {ORBIT_BLOBS.map((blob, i) => (
+        <div
+          key={i}
+          className="orbit-arm"
+          style={{
+            '--br': blob.br,
+            '--bdur': blob.bdur,
+            '--bwdur': blob.bwdur,
+            animationDelay: blob.bdelay,
+          } as React.CSSProperties}
+        >
+          <div
+            className="orbit-blob"
+            style={{
+              '--bw': blob.bw,
+              '--dh': String(blob.dh),
+            } as React.CSSProperties}
+          />
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -77,7 +112,6 @@ function OrbIcon({ state }: { state: BobbyState }) {
 
 export default function App() {
   const [state, setState] = useState<BobbyState>('idle');
-  const [text, setText] = useState('');
   const [visible, setVisible] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsRef = useRef<BobbyWS | null>(null);
@@ -93,7 +127,6 @@ export default function App() {
 
     const unsub = ws.onEvent(event => {
       setState(event.state);
-      if (event.text) setText(event.text);
 
       if (event.state !== 'idle') {
         lastActiveRef.current = event.state;
@@ -106,7 +139,6 @@ export default function App() {
       } else {
         hideTimer.current = setTimeout(() => {
           setVisible(false);
-          setText('');
           hideTimer.current = null;
           appWindow.setIgnoreCursorEvents(true).catch(() => {});
         }, HIDE_DELAY);
@@ -127,10 +159,8 @@ export default function App() {
   return (
     <div className={`orb-wrapper${visible ? ' visible' : ''}`}>
       <div className={`orb-glow-ring orb-glow-ring--${displayState}`}>
-        <div className="orb-backdrop" />
         <SparkleField />
-        <div className="orbit-ring" />
-        <div className="orbit-ring-inner" />
+        <OrbitBlobs />
         <div className={`orb orb--${displayState}`}>
           <OrbIcon state={state} />
         </div>
