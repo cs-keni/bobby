@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-06-05 — fix: thinking icon → dots + Discord/Electron URI schemes + taskbar scan (Claude Sonnet 4.6)
+
+**Thinking icon**: Changed `OrbIcon` to return `<ListeningDots />` for both `thinking` and `listening` states. Removed `.thinking-ring` CSS and `@keyframes spin` (dead code).
+
+**Discord/Electron URI schemes**: Changed bare executable names to URI schemes for apps that register them — `discord://`, `slack://`, `notion://`, `figma://` (joining `obsidian://` already fixed). Root cause: squirrel-installed Electron apps don't reliably populate App Paths registry, so `start "" "discord"` fails. URI schemes go through Windows' registered handler and always work regardless of install path or version.
+
+**Taskbar pin scanning**: Added taskbar pins directory (`%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`) to `_discover_windows_shortcuts()`. Apps pinned to the taskbar but absent from Start Menu are now indexed automatically.
+
+Commit hash: (pending)
+
+---
+
 ## 2026-06-05 — feat: listening dots + Start Menu auto-discovery (Claude Sonnet 4.6)
 
 **Listening indicator → 3 bouncing dots**

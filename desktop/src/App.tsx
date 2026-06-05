@@ -115,8 +115,7 @@ function ListeningDots() {
 
 function OrbIcon({ state }: { state: BobbyState }) {
   if (state === 'speaking') return <Waveform />;
-  if (state === 'thinking') return <div className="thinking-ring" />;
-  if (state === 'listening') return <ListeningDots />;
+  if (state === 'thinking' || state === 'listening') return <ListeningDots />;
   return null;
 }
 

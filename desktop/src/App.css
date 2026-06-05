@@ -292,21 +292,6 @@ html, body, #root {
   }
 }
 
-/* ── Thinking spinner ───────────────────────────────────────────────── */
-
-.thinking-ring {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2.5px solid rgba(255, 255, 255, 0.14);
-  border-top-color: rgba(255, 255, 255, 0.95);
-  border-right-color: rgba(255, 255, 255, 0.5);
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 
 /* ── Siri-style waveform (7 bars, bell-curve heights) ───────────────── */
 

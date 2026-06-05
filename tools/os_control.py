@@ -25,7 +25,7 @@ log = get_logger(__name__)
 APP_MAP: dict[str, str] = {
     "chrome": "chrome",
     "google chrome": "chrome",
-    "discord": "discord",
+    "discord": "discord://",
     "vscode": "code",
     "vs code": "code",
     "visual studio code": "code",
@@ -49,13 +49,13 @@ APP_MAP: dict[str, str] = {
     "excel": "excel",
     "powerpoint": "powerpnt",
     "outlook": "outlook",
-    "slack": "slack",
+    "slack": "slack://",
     "zoom": "zoom",
     "obs": "obs64",
     "steam": "steam",
     "obsidian": "obsidian://",
-    "notion": "Notion",
-    "figma": "figma",
+    "notion": "notion://",
+    "figma": "figma://",
     "cursor": "cursor",
 }
 
@@ -82,11 +82,14 @@ def _discover_start_menu_apps() -> dict[str, str]:
         dirs = [
             "/mnt/c/ProgramData/Microsoft/Windows/Start Menu/Programs",
             "/mnt/c/Users/*/AppData/Roaming/Microsoft/Windows/Start Menu/Programs",
+            # Taskbar-pinned shortcuts (apps pinned but not in Start Menu)
+            "/mnt/c/Users/*/AppData/Roaming/Microsoft/Internet Explorer/Quick Launch/User Pinned/TaskBar",
         ]
     elif on_win:
         dirs = [
             os.path.expandvars(r"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs"),
             os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs"),
+            os.path.expandvars(r"%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"),
         ]
     else:
         _start_menu_cache = {}
