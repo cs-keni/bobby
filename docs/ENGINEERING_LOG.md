@@ -10,7 +10,7 @@
 
 **Taskbar pin scanning**: Added taskbar pins directory (`%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`) to `_discover_windows_shortcuts()`. Apps pinned to the taskbar but absent from Start Menu are now indexed automatically.
 
-Commit hash: (pending)
+Commit hash: d998c3d
 
 ---
 
