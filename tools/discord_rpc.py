@@ -94,10 +94,8 @@ try {
     Write-Frame $pipe 1 @{
         cmd   = "AUTHORIZE"
         args  = @{
-            client_id    = $cid
-            scopes       = @("rpc")
-            redirect_uri = "http://127.0.0.1"
-            prompt       = "none"
+            client_id = $cid
+            scopes    = @("rpc")
         }
         nonce = [guid]::NewGuid().ToString()
     }
@@ -253,6 +251,7 @@ def join_voice(channel_id: str, channel_name: str) -> ToolResult:
     if "PIPE_NOT_FOUND" in out:
         return ToolResult(success=False, message="Discord isn't running — open it first.")
     if "CODE:" not in out:
+        log.warning(f"Discord authorize PS output: {out[:500]!r}")
         return ToolResult(success=False, message=f"Discord authorization failed: {out[:300]}")
 
     code = out.split("CODE:", 1)[1].strip().splitlines()[0]
